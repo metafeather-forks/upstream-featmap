@@ -145,7 +145,7 @@ class WorkspaceSettingsPage extends Component<Props, State> {
                                             API_UPDATE_MEMBER_LEVEL(ws.id, props.member.id, values.level)
                                                 .then((response) => {
 
-                                                    response.json().then((data: any) => {
+                                                    response.json().then((data: { message?: string }) => {
                                                         if (response.ok) {
                                                             this.loadMembers()
                                                             this.props.newMessage("success", "role changed")
@@ -199,7 +199,7 @@ class WorkspaceSettingsPage extends Component<Props, State> {
                                                         this.props.newMessage("success", "membership removed")
                                                     }
                                                     else {
-                                                        response.json().then((data: any) => {
+                                                        response.json().then((data: { message?: string }) => {
                                                             this.props.newMessage("fail", data.message)
                                                         })
                                                     }
@@ -244,7 +244,7 @@ class WorkspaceSettingsPage extends Component<Props, State> {
                                                         window.location.href = "/";
                                                     }
                                                     else {
-                                                        response.json().then((data: any) => {
+                                                        response.json().then((data: { message?: string }) => {
                                                             this.props.newMessage("fail", data.message)
                                                         })
                                                     }
@@ -288,7 +288,7 @@ class WorkspaceSettingsPage extends Component<Props, State> {
                                                             this.props.newMessage("success", "invite sent")
                                                         }
                                                         else {
-                                                            response.json().then((data: any) => {
+                                                            response.json().then((data: { message?: string }) => {
                                                                 this.props.newMessage("fail", data.message)
                                                             })
                                                         }
@@ -359,7 +359,7 @@ class WorkspaceSettingsPage extends Component<Props, State> {
                                                                                     this.props.newMessage("success", "invite canceled")
                                                                                 }
                                                                                 else {
-                                                                                    response.json().then((data: any) => {
+                                                                                    response.json().then((data: { message?: string }) => {
                                                                                         this.props.newMessage("fail", data.message)
                                                                                     })
                                                                                 }
@@ -385,7 +385,7 @@ class WorkspaceSettingsPage extends Component<Props, State> {
                                                                                     this.props.newMessage("success", "invite resent")
                                                                                 }
                                                                                 else {
-                                                                                    response.json().then((data: any) => {
+                                                                                    response.json().then((data: { message?: string }) => {
                                                                                         this.props.newMessage("fail", data.message)
                                                                                     })
                                                                                 }
@@ -465,7 +465,7 @@ class WorkspaceSettingsPage extends Component<Props, State> {
                                                         window.location.href = "/";
                                                     }
                                                     else {
-                                                        response.json().then((data: any) => {
+                                                        response.json().then((data: { message?: string }) => {
                                                             this.props.newMessage("fail", data.message)
                                                         })
                                                     }

@@ -18,7 +18,7 @@ import { connect } from 'react-redux'
 import { IFeature } from '../store/features/types';
 import { ISubWorkflow } from '../store/subworkflows/types';
 import { IMilestone } from '../store/milestones/types';
-import { DraggableProvided, DraggableStateSnapshot, DroppableProvided, DroppableStateSnapshot, DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { DraggableProvided, DraggableStateSnapshot, DroppableProvided, DroppableStateSnapshot, DragDropContext, Droppable, Draggable, DropResult, DraggableStyle } from '@hello-pangea/dnd';
 import { IApplication } from '../store/application/types';
 import CreateCardModal from './CreateCardModal';
 import Card from './Card';
@@ -259,7 +259,7 @@ class Board extends Component<Props, State> {
     background: isDraggingOver ? '#DAE1E7' : '',
   });
 
-  getItemStyle = (isDragging: boolean, draggableStyle: any): {} => ({
+  getItemStyle = (isDragging: boolean, draggableStyle: DraggableStyle): React.CSSProperties => ({
     background: isDragging ? '#51D88A' : '',
 
     // styles we need to apply on draggables

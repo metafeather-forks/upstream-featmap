@@ -237,7 +237,7 @@ class WorkspacesPage extends Component<Props, State> {
                                             window.location.href = "/";
                                         }
                                         else {
-                                            response.json().then((data: any) => {
+                                            response.json().then((data: { message?: string }) => {
                                                 // noinspection JSIgnoredPromiseFromCall
                                                 this.props.newMessage('fail', data.message)
                                             })
