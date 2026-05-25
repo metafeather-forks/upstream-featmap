@@ -1,106 +1,55 @@
-import React, { Component } from 'react';
-import { RouteComponentProps } from 'react-router'
-import { AppState } from '../store'
+import { useEffect, useState } from 'react';
+import { Route, Switch, Redirect, useParams, useRouteMatch } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { AppState } from '../store';
 import { getWorkspaceByName, application } from '../store/application/selectors';
-import { connect } from 'react-redux'
 import NotFound from './NotFound';
 import ProjectPage from './ProjectPage';
 import Header from '../components/Header';
 import { IApplication } from '../store/application/types';
 import { loadProjectsAction } from '../store/projects/actions';
-import { projects } from '../store/projects/selectors';
 import { IProject } from '../store/projects/types';
-import { Route, Switch, Redirect, Link } from 'react-router-dom'
 import ProjectsPage from './ProjectsPage';
 import { API_GET_PROJECTS } from '../api'
 import WorkspaceSettingsPage from './WorkspaceSettingsPage';
 
-const mapStateToProps = (state: AppState) => ({
-    application: application(state),
-    projects: projects(state)
-})
+function WorkspacePage() {
+  const { workspaceName } = useParams<{ workspaceName: string }>();
+  const match = useRouteMatch();
+  const dispatch = useDispatch();
+  const app = useSelector((state: AppState) => application(state));
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
-const mapDispatchToProps = {
-    loadProjects: loadProjectsAction
+  useEffect(() => {
+    const ws = getWorkspaceByName(app, workspaceName);
+    if (!ws) { setNotFound(true); return; }
+    API_GET_PROJECTS(ws.id).then(response => {
+      if (response.ok) {
+        response.json().then((data: IProject[]) => {
+          dispatch(loadProjectsAction(data));
+          setLoading(false);
+        })
+      }
+    })
+  }, [app, workspaceName, dispatch]);
+
+  const ws = getWorkspaceByName(app, workspaceName);
+
+  if (notFound) return <div><Redirect to="/" /></div>;
+  if (loading) return <div className="p-2">Loading data...</div>;
+
+  return (
+    <div>
+      <Header account={app.account!} workspaceName={workspaceName} />
+      <Switch>
+        <Route exact strict path={match.path} component={ProjectsPage} />
+        <Route exact strict path={match.path + "/settings"} component={WorkspaceSettingsPage} />
+        <Route strict path={match.path + "/projects/:projectId"} component={ProjectPage} />
+        <Route path={match.path} component={NotFound} />
+      </Switch>
+    </div>
+  );
 }
 
-interface PropsFromState {
-    application: IApplication
-    projects: IProject[]
-}
-interface RouterProps extends RouteComponentProps<{
-    workspaceName: string
-}> { }
-interface PropsFromDispatch {
-    //loadProjectsRequest: typeof loadProjectsRequest
-    loadProjects: typeof loadProjectsAction
-}
-interface SelfProps { }
-type Props = RouterProps & PropsFromState & PropsFromDispatch & SelfProps
-
-interface State {
-    loading: boolean
-    notFound: boolean
-}
-
-class WorkspacePage extends Component<Props, State> {
-
-    constructor(props: Props) {
-        super(props)
-        this.state = {
-            loading: true,
-            notFound: false
-        }
-    }
-
-    componentDidMount() {
-        const { workspaceName } = this.props.match.params
-        const ws = getWorkspaceByName(this.props.application, workspaceName)
-
-        if (!ws) this.setState({ notFound: true })
-
-        if (ws) {
-            API_GET_PROJECTS(ws.id)
-                .then(response => {
-                    if (response.ok) {
-                        response.json().then((data: IProject[]) => {
-                            this.props.loadProjects(data)
-                            this.setState({ loading: false })
-                        })
-                    }
-                }
-                )
-
-        }
-    }
-
-    render() {
-        const { workspaceName } = this.props.match.params
-        const ws = getWorkspaceByName(this.props.application, workspaceName)!
-
-        return (
-            this.state.notFound ?
-                <div><Redirect to="/" /></div>
-                :
-                this.state.loading ?
-                    <div className="p-2">Loading data...</div>
-                    :
-                    (
-                        <div>
-                            <div>
-                                <Header account={this.props.application.account!} workspaceName={workspaceName} />
-
-                                <Switch>
-                                    <Route exact strict path={this.props.match.path} component={ProjectsPage} />
-                                    <Route exact strict path={this.props.match.path + "/settings"} component={WorkspaceSettingsPage} />
-                                    <Route strict path={this.props.match.path + "/projects/:projectId"} component={ProjectPage} />
-                                    <Route path={this.props.match.path} component={NotFound} />
-                                </Switch>
-                            </div>
-                        </div>
-                    )
-        )
-    }
-}
-
-export default connect(mapStateToProps, mapDispatchToProps)(WorkspacePage)
+export default WorkspacePage;

@@ -1,36 +1,23 @@
-import React, { Component } from 'react';
-import { RouteComponentProps } from 'react-router'
+import { useEffect } from 'react';
+import { useHistory } from 'react-router-dom';
 import { API_LOG_OUT } from '../api';
 import { resetAppAction } from '../store/application/actions'
+import { useDispatch } from 'react-redux'
 
-import { connect } from 'react-redux'
+function LogoutPage() {
+  const history = useHistory();
+  const dispatch = useDispatch();
 
-const mapDispatchToProps = {
-    resetApp: resetAppAction
+  useEffect(() => {
+    API_LOG_OUT().then(resp => {
+      if (resp.ok) {
+        dispatch(resetAppAction())
+        history.push("/")
+      }
+    })
+  }, [history, dispatch]);
+
+  return <div />;
 }
 
-interface PropsFromState { }
-interface RouterProps extends RouteComponentProps<{
-}> { }
-interface PropsFromDispatch {
-    resetApp: typeof resetAppAction
-}
-interface SelfProps { }
-type Props = RouterProps & PropsFromState & PropsFromDispatch & SelfProps
-class LogoutPage extends Component<Props> {
-    componentDidMount() {
-        API_LOG_OUT().then(resp => {
-            if (resp.ok) {
-                this.props.resetApp()
-                this.props.history.push("/")
-            }
-        }
-        )
-    }
-
-    render() {
-        return <div />
-    }
-}
-
-export default connect(null, mapDispatchToProps)(LogoutPage)
+export default LogoutPage;
