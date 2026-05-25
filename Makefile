@@ -18,9 +18,13 @@ webapp:
 dev: webapp
 	go run .
 
-## test: run all tests
+## test: run Go unit and integration tests
 test:
 	go test ./...
+
+## e2e: run Playwright end-to-end tests (requires webapp build)
+e2e: webapp
+	cd $(WEBAPP) && npx playwright test
 
 ## vet: run go vet
 vet:
