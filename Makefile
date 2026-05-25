@@ -12,7 +12,7 @@ build: webapp
 
 ## webapp: build the frontend SPA
 webapp:
-	cd $(WEBAPP) && npm install --legacy-peer-deps && npm run build
+	cd $(WEBAPP) && npm install && npm run build
 
 ## dev: run the server in development mode (uses conf.json)
 dev: webapp

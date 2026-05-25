@@ -3,7 +3,7 @@ WORKDIR /src
 RUN apk add --update npm git
 COPY ./webapp/package.json webapp/package.json
 RUN cd ./webapp && \
-    npm install --legacy-peer-deps
+    npm install
 COPY . .
 RUN cd ./webapp && \
     npm run build
