@@ -9,8 +9,6 @@ import * as fromPersonas from './personas/reducers'
 import * as fromWorkflowPersonas from './workflowpersonas/reducers'
 
 import { combineReducers } from 'redux';
-import { RouterState, connectRouter } from 'connected-react-router'
-import { History } from 'history'
 
 import { Actions as ApplicationActions } from "./application/actions"
 import { Actions as FeaturesActions } from "./features/actions"
@@ -29,12 +27,11 @@ export interface AppState {
     subWorkflows: fromSubWorkflows.State,
     milestones: fromMilestones.State
     application: fromApplication.State
-    router: RouterState
     personas: fromPersonas.State
     workflowPersonas: fromWorkflowPersonas.State
 }
 
-export const reducer = (history: History) => combineReducers<AppState>({
+export const reducer = combineReducers<AppState>({
     projects: fromProjects.reducer,
     features: fromFeatures.reducer,
     featureComments: fromFeatureComments.reducer,
@@ -44,7 +41,6 @@ export const reducer = (history: History) => combineReducers<AppState>({
     application: fromApplication.reducer,
     personas: fromPersonas.reducer,
     workflowPersonas: fromWorkflowPersonas.reducer,
-    router: connectRouter(history)
 })
 
 export type AllActions = ApplicationActions | FeaturesActions | MilestonesActions | ProjectsActions | WorkflowsActions | SubworkflowsActions | PersonaActions
