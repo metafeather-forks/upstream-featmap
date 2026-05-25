@@ -107,6 +107,16 @@ func main() {
 	r.Route("/v1/users", usersAPI)               // Nothing is needed
 	r.Route("/v1/link", linkAPI)                 // Nothing is needed
 
+	r.Get("/v1/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if db == nil || db.Ping() != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte(`{"status":"unhealthy"}`))
+			return
+		}
+		w.Write([]byte(`{"status":"healthy"}`))
+	})
+
 	r.Route("/v1/account", accountAPI) // Account needed
 	r.Route("/v1/", workspaceAPI)      // Account + workspace is needed
 
@@ -138,21 +148,100 @@ func main() {
 }
 
 func readConfiguration() (Configuration, error) {
-	file, err := os.Open("conf.json")
+	c := Configuration{}
 
-	defer func() {
-		if err := file.Close(); err != nil {
-			log.Println(err)
-		}
-	}()
-
-	decoder := json.NewDecoder(file)
-	configuration := Configuration{}
-	err = decoder.Decode(&configuration)
-
-	if configuration.SMTPPort == "" {
-		configuration.SMTPPort = "587"
+	// Read from environment variables first, fall back to conf.json
+	if env := os.Getenv("PORT"); env != "" {
+		c.Port = env
+	}
+	if env := os.Getenv("DATABASE_URL"); env != "" {
+		c.DbConnectionString = env
+	}
+	if env := os.Getenv("JWT_SECRET"); env != "" {
+		c.JWTSecret = env
+	}
+	if env := os.Getenv("APP_SITE_URL"); env != "" {
+		c.AppSiteURL = env
+	}
+	if env := os.Getenv("ENVIRONMENT"); env != "" {
+		c.Environment = env
+	}
+	if env := os.Getenv("MODE"); env != "" {
+		c.Mode = env
+	}
+	if env := os.Getenv("EMAIL_FROM"); env != "" {
+		c.EmailFrom = env
+	}
+	if env := os.Getenv("SMTP_SERVER"); env != "" {
+		c.SMTPServer = env
+	}
+	if env := os.Getenv("SMTP_PORT"); env != "" {
+		c.SMTPPort = env
+	}
+	if env := os.Getenv("SMTP_USER"); env != "" {
+		c.SMTPUser = env
+	}
+	if env := os.Getenv("SMTP_PASS"); env != "" {
+		c.SMTPPass = env
 	}
 
-	return configuration, err
+	// Fall back to conf.json for any unset values
+	file, err := os.Open("conf.json")
+	if err == nil {
+		defer file.Close()
+		var fileConfig Configuration
+		if decodeErr := json.NewDecoder(file).Decode(&fileConfig); decodeErr == nil {
+			if c.Port == "" {
+				c.Port = fileConfig.Port
+			}
+			if c.DbConnectionString == "" {
+				c.DbConnectionString = fileConfig.DbConnectionString
+			}
+			if c.JWTSecret == "" {
+				c.JWTSecret = fileConfig.JWTSecret
+			}
+			if c.AppSiteURL == "" {
+				c.AppSiteURL = fileConfig.AppSiteURL
+			}
+			if c.Environment == "" {
+				c.Environment = fileConfig.Environment
+			}
+			if c.Mode == "" {
+				c.Mode = fileConfig.Mode
+			}
+			if c.EmailFrom == "" {
+				c.EmailFrom = fileConfig.EmailFrom
+			}
+			if c.SMTPServer == "" {
+				c.SMTPServer = fileConfig.SMTPServer
+			}
+			if c.SMTPPort == "" {
+				c.SMTPPort = fileConfig.SMTPPort
+			}
+			if c.SMTPUser == "" {
+				c.SMTPUser = fileConfig.SMTPUser
+			}
+			if c.SMTPPass == "" {
+				c.SMTPPass = fileConfig.SMTPPass
+			}
+		}
+	}
+
+	// Defaults
+	if c.SMTPPort == "" {
+		c.SMTPPort = "587"
+	}
+	if c.Port == "" {
+		c.Port = "5000"
+	}
+
+	// Validate required fields
+	if c.DbConnectionString == "" {
+		return c, fmt.Errorf("DATABASE_URL or conf.json required")
+	}
+	if c.JWTSecret == "" {
+		return c, fmt.Errorf("JWT_SECRET or conf.json required")
+	}
+
+	return c, nil
 }
