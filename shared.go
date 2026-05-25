@@ -2,13 +2,7 @@ package main
 
 import (
 	"strings"
-	"time"
 )
-
-func subHasExpired(s *Subscription) bool {
-	b := s.ExpirationDate.Before(time.Now().UTC())
-	return b
-}
 
 var validAnnotations = []string{
 	"RISKY",

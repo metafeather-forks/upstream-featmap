@@ -1,4 +1,4 @@
-import { ISubscription } from "../store/application/types";
+import { } from "../store/application/types";
 
 export enum Roles {
     VIEWER = "VIEWER",
@@ -7,11 +7,6 @@ export enum Roles {
     OWNER = "OWNER",
 }
 
-export enum SubscriptionLevels {
-    TRIAL = "TRIAL",
-    BASIC = "BASIC",
-    PRO = "PRO",
-}
 
 export const isEditor = (level: Roles) => {
     return level === Roles.EDITOR || level === Roles.ADMIN || level === Roles.OWNER
@@ -31,23 +26,6 @@ export enum CardStatus {
 export type personaBarState = { page: "all" } | { page: "persona", personaId: string, edit: boolean } | { page: "create", workflowId: string, workflowTitle: string }
 
 
-export const subscriptionLevelToText = (level: SubscriptionLevels) => {
-    switch (level) {
-        case SubscriptionLevels.TRIAL: {
-            return "Trial"
-        }
-        case SubscriptionLevels.BASIC: {
-            return "Team"
-        }
-        case SubscriptionLevels.PRO: {
-            return "Business"
-        }
-
-        default: {
-            return "Default"
-        }
-    }
-}
 
 
 export const memberLevelToTitle = (level: string) => {
@@ -259,47 +237,11 @@ export const colorToBorderColorClass = (color: Color) => {
     }
 }
 
-export const subIsInactive = (sub: ISubscription) => {
-    switch (sub.externalStatus) {
-
-        case "incomplete_expired":
-        case "incomplete":
-        case "past_due":
-        case "canceled":
-            return true
-        case "trialing":
-            return (new Date(sub.expirationDate)) < new Date()
-        case "active":
-            return false
-        default:
-            return true
-    }
-}
-
-export const mustCreateNewSub = (sub: ISubscription) => {
-    switch (sub.externalStatus) {
-        case "incomplete_expired":
-        case "incomplete":
-        case "trialing":
-        case "canceled":
-            return true
-        default:
-            return false
-    }
-}
-
-export const subIsTrial = (sub: ISubscription) => {
-    return sub.externalStatus === "trialing"
-}
 
 
-export const subIsProOrAbove = (sub: ISubscription) => {
-    return sub.level === SubscriptionLevels.PRO
-}
 
-export const subIsBasicOrAbove = (sub: ISubscription) => {
-    return sub.level === SubscriptionLevels.PRO || sub.level === SubscriptionLevels.BASIC
-}
+
+
 
 
 

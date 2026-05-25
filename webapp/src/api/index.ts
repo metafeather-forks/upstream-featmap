@@ -1,4 +1,4 @@
-import { IWorkspace, IMembership, IAccount, IMessage, ISubscription } from '../store/application/types'
+import { IWorkspace, IMembership, IAccount, IMessage } from '../store/application/types'
 import { IProject } from '../store/projects/types'
 import { IMilestone } from '../store/milestones/types';
 import { IWorkflow } from '../store/workflows/types';
@@ -11,7 +11,7 @@ import { IWorkflowPersona } from '../store/workflowpersonas/types';
 
 const endpoint = import.meta.env.VITE_API_ENDPOINT ? import.meta.env.VITE_API_ENDPOINT : "/v1"
 
-export const API_CHANGE_GENERAL_INFORMATION = async (workspaceId: string, euVat: string, externalBillingEmail: string) => {
+export const API_CHANGE_GENERAL_INFORMATION = async (workspaceId: string, euVat: string) => {
 
     return await fetch(endpoint + "/settings/general-info", {
         method: 'POST',
@@ -21,7 +21,7 @@ export const API_CHANGE_GENERAL_INFORMATION = async (workspaceId: string, euVat:
             "Workspace": workspaceId,
         },
         credentials: 'include',
-        body: JSON.stringify({ euVat, externalBillingEmail })
+        body: JSON.stringify({ euVat })
     });
 }
 
@@ -205,7 +205,6 @@ export interface API_FETCH_APP_RESP {
     memberships: IMembership[]
     account: IAccount
     messages: IMessage[]
-    subscriptions: ISubscription[]
 }
 
 export const API_FETCH_APP = async () => {
@@ -993,35 +992,6 @@ export const API_CONTACT = async (data: API_CONTACT_INTERFACE) => {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(data)
-    });
-}
-
-
-// SUBSCRIPTIONS
-
-export const API_GET_CHECKOUT_SESSION = async (workspaceId: string, plan: string, quantity: number) => {
-    return await fetch(endpoint + "/subscription/checkoutsession", {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            "Workspace": workspaceId
-        },
-        credentials: 'include',
-        body: JSON.stringify({ plan, quantity })
-    });
-}
-
-export const API_CHANGE_SUBSCRIPTION = async (workspaceId: string, plan: string, quantity: number) => {
-    return await fetch(endpoint + "/subscription/change", {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            "Workspace": workspaceId
-        },
-        credentials: 'include',
-        body: JSON.stringify({ plan, quantity })
     });
 }
 

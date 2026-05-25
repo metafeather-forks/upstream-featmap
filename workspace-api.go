@@ -21,7 +21,6 @@ func workspaceAPI(r chi.Router) {
 
 	r.Group(func(r chi.Router) {
 		r.Use(RequireOwner())
-		r.Use(requireDeleteableWorkspace())
 		r.Post("/delete", deleteWorkspace)
 	})
 
@@ -36,7 +35,6 @@ func workspaceAPI(r chi.Router) {
 
 		r.Route("/members/{ID}", func(r chi.Router) {
 			r.Group(func(r chi.Router) {
-				r.Use(RequireSubscription())
 				r.Post("/level", updateMemberLevel)
 			})
 
@@ -48,13 +46,11 @@ func workspaceAPI(r chi.Router) {
 
 	r.Group(func(r chi.Router) {
 		r.Use(RequireAdmin())
-		r.Use(RequireSubscription())
 		r.Post("/invites", createInvite)
 	})
 
 	r.Group(func(r chi.Router) {
 		r.Use(RequireAdmin())
-		r.Use(RequireSubscription())
 		r.Post("/settings/allow-external-sharing", changeExternalSharingRequest)
 	})
 
@@ -68,7 +64,6 @@ func workspaceAPI(r chi.Router) {
 
 		r.Route("/invites/{ID}", func(r chi.Router) {
 			r.Group(func(r chi.Router) {
-				r.Use(RequireSubscription())
 				r.Post("/resend", resendInvite)
 			})
 
@@ -92,7 +87,6 @@ func workspaceAPI(r chi.Router) {
 					})
 
 					r.Group(func(r chi.Router) {
-						r.Use(RequireSubscription())
 						r.Use(RequireEditor())
 						r.Post("/", createProject)
 						r.Delete("/", deleteProject)
@@ -102,7 +96,6 @@ func workspaceAPI(r chi.Router) {
 				})
 
 				r.Route("/milestones/{ID}", func(r chi.Router) {
-					r.Use(RequireSubscription())
 					r.Use(RequireEditor())
 					r.Post("/", createMilestone)
 					r.Delete("/", deleteMilestone)
@@ -116,7 +109,6 @@ func workspaceAPI(r chi.Router) {
 				})
 
 				r.Route("/workflows/{ID}", func(r chi.Router) {
-					r.Use(RequireSubscription())
 					r.Use(RequireEditor())
 					r.Post("/", createWorkflow)
 					r.Delete("/", deleteWorkflow)
@@ -130,7 +122,6 @@ func workspaceAPI(r chi.Router) {
 				})
 
 				r.Route("/subworkflows/{ID}", func(r chi.Router) {
-					r.Use(RequireSubscription())
 					r.Use(RequireEditor())
 					r.Post("/", createSubWorkflow)
 					r.Post("/rename", renameSubWorkflow)
@@ -144,7 +135,6 @@ func workspaceAPI(r chi.Router) {
 				})
 
 				r.Route("/features/{ID}", func(r chi.Router) {
-					r.Use(RequireSubscription())
 					r.Use(RequireEditor())
 					r.Post("/", createFeature)
 					r.Post("/rename", renameFeature)
@@ -159,7 +149,6 @@ func workspaceAPI(r chi.Router) {
 				})
 
 				r.Route("/featurecomments/{ID}", func(r chi.Router) {
-					r.Use(RequireSubscription())
 					r.Use(RequireEditor())
 					r.Post("/", createFeatureComment)
 					r.Delete("/", deleteFeatureComment)
@@ -167,14 +156,12 @@ func workspaceAPI(r chi.Router) {
 				})
 
 				r.Route("/workflowpersonas/{ID}", func(r chi.Router) {
-					r.Use(RequireSubscription())
 					r.Use(RequireEditor())
 					r.Post("/", createWorkflowPersona)
 					r.Delete("/", deleteWorkflowPersona)
 				})
 
 				r.Route("/personas/{ID}", func(r chi.Router) {
-					r.Use(RequireSubscription())
 					r.Use(RequireEditor())
 					r.Post("/", createPersona)
 					r.Delete("/", deletePersona)

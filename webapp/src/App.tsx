@@ -16,9 +16,7 @@ import Messages from './components/Messages';
 import AcceptInvitePage from './pages/AcceptInvitePage';
 import ExternalLinkPage from './pages/ExternalLinkPage';
 import ContactPage from './pages/ContactPage';
-import SuccessPage from './pages/SuccessPage';
 import SignupSuccessPage from './pages/SignupSuccessPage';
-import CancelPage from './pages/CancelPage';
 
 const mapStateToProps = (state: AppState) => ({
   application: application(state)
@@ -34,9 +32,7 @@ class App extends Component<Props, {}> {
       <div id="main">
         <Switch>
           <Route path="/link/:key" component={ExternalLinkPage} />
-          <Route exact path="/account/success" component={SuccessPage} />
           <Route exact path="/account/signupsuccess" component={SignupSuccessPage} />
-          <Route exact path="/account/cancel" component={CancelPage} />
           <Route exact path="/account/contact" component={ContactPage} />
           <Route exact path="/account/logout" component={LogoutPage} />
           <Route exact path="/account/signup" component={SignUpPage} />

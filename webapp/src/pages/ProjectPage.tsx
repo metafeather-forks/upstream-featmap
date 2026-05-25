@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import Board from '../components/Board';
 import EntityDetailsPage from './EntityDetailsPage';
-import { application, getWorkspaceByName, getMembership, getSubscription } from '../store/application/selectors';
+import { application, getWorkspaceByName, getMembership } from '../store/application/selectors';
 import { projects, getProjectById } from '../store/projects/selectors';
 import { RouteComponentProps } from 'react-router'
 import { Route, Switch, Link } from 'react-router-dom'
@@ -26,7 +26,7 @@ import { loadPersonasAction } from '../store/personas/actions';
 import { loadWorkflowPersonasAction } from '../store/workflowpersonas/actions';
 import { loadFeatureCommentsAction } from '../store/featurecomments/actions';
 import { IFeature } from '../store/features/types';
-import { isEditor, subIsInactive, subIsTrial, subIsBasicOrAbove } from '../core/misc';
+import { isEditor } from '../core/misc';
 import { Button } from '../components/elements';
 import queryString from 'query-string'
 import { featureComments, filterFeatureCommentsOnProject } from '../store/featurecomments/selectors';
@@ -200,10 +200,8 @@ class ProjectPage extends Component<Props, State> {
         const ws = getWorkspaceByName(this.props.application, workspaceName)!
         const proj = getProjectById(this.props.projects, projectId)!
         const member = getMembership(this.props.application, ws.id)
-        const s = getSubscription(this.props.application, ws.id)
-
-        const viewOnly = !isEditor(member.level) || subIsInactive(s)
-        const showPrivateLink = !subIsInactive(s) && (subIsTrial(s) || subIsBasicOrAbove(s)) && ws.allowExternalSharing
+        const viewOnly = !isEditor(member.level)
+        const showPrivateLink = ws.allowExternalSharing
 
         return (
             proj ?

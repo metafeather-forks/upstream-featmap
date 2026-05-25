@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stripe/stripe-go"
-
 	"github.com/amborle/featmap/migrations"
 	"github.com/amborle/featmap/webapp"
 
@@ -38,10 +36,6 @@ type Configuration struct {
 	SMTPPort            string `json:"smtpPort"`
 	SMTPUser            string `json:"smtpUser"`
 	SMTPPass            string `json:"smtpPass"`
-	StripeKey           string `json:"stripeKey"`
-	StripeWebhookSecret string `json:"stripeWebhookSecret"`
-	StripeBasicPlan     string `json:"stripeBasicPlan"`
-	StripeProPlan       string `json:"stripeProPlan"`
 }
 
 func main() {
@@ -105,8 +99,6 @@ func main() {
 
 	r.Use(User())
 
-	stripe.Key = config.StripeKey
-
 	// Set a timeout value on the request context (ctx), that will signal
 	// through ctx.Done() that the request has timed out and further
 	// processing should be stopped.
@@ -114,7 +106,6 @@ func main() {
 
 	r.Route("/v1/users", usersAPI)               // Nothing is needed
 	r.Route("/v1/link", linkAPI)                 // Nothing is needed
-	r.Route("/v1/subscription", subscriptionAPI) // Nothing is needed
 
 	r.Route("/v1/account", accountAPI) // Account needed
 	r.Route("/v1/", workspaceAPI)      // Account + workspace is needed

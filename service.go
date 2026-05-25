@@ -1,13 +1,11 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"log"
-	"net/http"
 	"strings"
 	"time"
-
-	"github.com/stripe/stripe-go"
-	"github.com/stripe/stripe-go/customer"
 
 	"github.com/amborle/featmap/lexorank"
 
@@ -15,8 +13,6 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/jwtauth"
 	"github.com/jmoiron/sqlx"
-	"errors"
-	"fmt"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -31,7 +27,6 @@ type Service interface {
 	SetRepoObject(m Repository)
 	SetAuth(x *jwtauth.JWTAuth)
 	SetWorkspaceObject(a *Workspace)
-	SetSubscriptionObject(x *Subscription)
 	UpdateLatestActivityNow()
 
 	GetConfig() Configuration
@@ -40,7 +35,6 @@ type Service interface {
 	GetMemberObject() *Member
 	GetAccountObject() *Account
 	GetWorkspaceObject() *Workspace
-	GetSubscriptionObject() *Subscription
 
 	SendEmail(smtpServer string, smtpPort string, smtpUser string, smtpPass string, from string, recipient string, subject string, body string) error
 
@@ -49,20 +43,13 @@ type Service interface {
 	Token(accountID string) string
 	DeleteAccount() error
 
-	CreateWorkspace(name string) (*Workspace, *Subscription, *Member, error)
+	CreateWorkspace(name string) (*Workspace, *Member, error)
 	GetWorkspace(id string) (*Workspace, error)
 	GetWorkspaceByContext() *Workspace
 	GetWorkspaces() []*Workspace
 	GetAccount(accountID string) (*Account, error)
 	GetAccountsByWorkspace() []*Account
 	DeleteWorkspace() error
-
-	StripeWebhook(r *http.Request) error
-	GetSubscriptionPlanSession(plan string, quantity int64) (string, error)
-	GetSubscriptionByWorkspace(id string) *Subscription
-	GetSubscriptionsByAccount() []*Subscription
-
-	ChangeSubscription(plan string, quantity int64) error
 
 	ConfirmEmail(key string) error
 	UpdateEmail(email string) error
@@ -164,7 +151,6 @@ type service struct {
 	config       Configuration
 	Acc          *Account
 	Member       *Member
-	Subscription *Subscription
 	r            Repository
 	auth         *jwtauth.JWTAuth
 	ws           *Workspace
@@ -182,13 +168,11 @@ func (s *service) SetMemberObject(m *Member)             { s.Member = m }
 func (s *service) SetRepoObject(m Repository)            { s.r = m }
 func (s *service) SetAuth(x *jwtauth.JWTAuth)            { s.auth = x }
 func (s *service) SetWorkspaceObject(a *Workspace)       { s.ws = a }
-func (s *service) SetSubscriptionObject(x *Subscription) { s.Subscription = x }
 
 func (s *service) GetConfig() Configuration             { return s.config }
 func (s *service) GetDBObject() *sqlx.DB                { return s.r.DB() }
 func (s *service) GetRepoObject() Repository            { return s.r }
 func (s *service) GetAccountObject() *Account           { return s.Acc }
-func (s *service) GetSubscriptionObject() *Subscription { return s.Subscription }
 func (s *service) GetMemberObject() *Member             { return s.Member }
 func (s *service) GetWorkspaceObject() *Workspace       { return s.ws }
 
@@ -262,27 +246,6 @@ func (s *service) Register(workspaceName string, name string, email string, pass
 		PasswordResetKey:         uuid.Must(uuid.NewV7()).String(),
 	}
 
-	sub := &Subscription{
-		ID:                 uuid.Must(uuid.NewV7()).String(),
-		WorkspaceID:        workspace.ID,
-		Level:              "TRIAL",
-		NumberOfEditors:    100,
-		FromDate:           t,
-		ExpirationDate:     t.AddDate(0, 0, 15),
-		CreatedByName:      acc.Name,
-		CreatedAt:          t,
-		LastModified:       t,
-		LastModifiedByName: acc.Name,
-		Status:             "trialing",
-	}
-
-	if s.config.Mode != "hosted" {
-		sub.Level = "BASIC"
-		sub.NumberOfEditors = 1000
-		sub.ExpirationDate = t.AddDate(1000, 0, 0)
-		sub.Status = "active"
-	}
-
 	member := &Member{
 		ID:          uuid.Must(uuid.NewV7()).String(),
 		WorkspaceID: workspace.ID,
@@ -293,12 +256,10 @@ func (s *service) Register(workspaceName string, name string, email string, pass
 
 	s.r.StoreWorkspace(workspace)
 	s.r.StoreAccount(acc)
-	s.r.StoreSubscription(sub)
 	s.r.StoreMember(member)
 
 	s.SetWorkspaceObject(workspace)
 	s.SetAccountObject(acc)
-	s.SetSubscriptionObject(sub)
 	s.SetMemberObject(member)
 
 	body, err := WelcomeBody(welcome{s.config.AppSiteURL, acc.EmailConfirmationSentTo, workspace.Name, acc.EmailConfirmationKey})
@@ -367,37 +328,20 @@ func (s *service) GetAccountsByWorkspace() []*Account {
 	return accounts
 }
 
-func (s *service) GetSubscriptionsByAccount() []*Subscription {
-	subs, err := s.r.FindSubscriptionsByAccount(s.Acc.ID)
-	if err != nil {
-		return nil
-	}
-	return subs
-}
-
-func (s *service) GetSubscriptionByWorkspace(id string) *Subscription {
-	subs, err := s.r.FindSubscriptionsByWorkspace(id)
-	if err != nil {
-		return nil
-	}
-	// Take the latest one, they come sorted from the db!
-	return subs[0]
-}
-
 func workspaceNameIsValid(name string) bool {
 	return !(len(name) < 2 || len(name) > 200 || !govalidator.IsAlphanumeric(name) || name == "account" || name == "link")
 }
 
-func (s *service) CreateWorkspace(name string) (*Workspace, *Subscription, *Member, error) {
+func (s *service) CreateWorkspace(name string) (*Workspace, *Member, error) {
 	name = govalidator.Trim(name, "")
 
 	if !workspaceNameIsValid(name) {
-		return nil, nil, nil, errors.New("workspace_invalid")
+		return nil, nil, errors.New("workspace_invalid")
 	}
 
 	dupworkspace, _ := s.r.GetWorkspaceByName(name)
 	if dupworkspace != nil {
-		return nil, nil, nil, errors.New("workspace_taken")
+		return nil, nil, errors.New("workspace_taken")
 	}
 
 	t := time.Now().UTC()
@@ -409,19 +353,6 @@ func (s *service) CreateWorkspace(name string) (*Workspace, *Subscription, *Memb
 		EUVAT:                "",
 		ExternalBillingEmail: s.Acc.Email,
 	}
-	subscription := &Subscription{
-		ID:                 uuid.Must(uuid.NewV7()).String(),
-		WorkspaceID:        workspace.ID,
-		Level:              "TRIAL",
-		NumberOfEditors:    100,
-		FromDate:           t,
-		ExpirationDate:     t.AddDate(0, 0, 15),
-		CreatedByName:      s.Acc.Name,
-		CreatedAt:          t,
-		LastModified:       t,
-		LastModifiedByName: s.Acc.Name,
-		Status:             "trialing",
-	}
 	member := &Member{
 		ID:          uuid.Must(uuid.NewV7()).String(),
 		WorkspaceID: workspace.ID,
@@ -431,10 +362,9 @@ func (s *service) CreateWorkspace(name string) (*Workspace, *Subscription, *Memb
 	}
 
 	s.r.StoreWorkspace(workspace)
-	s.r.StoreSubscription(subscription)
 	s.r.StoreMember(member)
 
-	return workspace, subscription, member, nil
+	return workspace, member, nil
 }
 
 func (s *service) GetWorkspace(id string) (*Workspace, error) {
@@ -484,41 +414,11 @@ func (s *service) UpdateMemberLevel(memberID string, level string) (*Member, err
 		return nil, errors.New("not allowed to change role of owner")
 	}
 
-	if isEditor(level) {
-		members := s.GetMembers()
-		sub := s.GetSubscriptionByWorkspace(s.Member.WorkspaceID)
-
-		n := 0
-		for _, m := range members {
-			if isEditor(m.Level) {
-				n++
-			}
-		}
-
-		if (!isEditor(member.Level)) && (n+1 > sub.NumberOfEditors) {
-			return nil, errors.New("subscription exceeded - please contact the owner of the workspace")
-		}
-
-	}
-
 	member.Level = level
 
 	s.r.StoreMember(member)
 
 	return member, nil
-}
-
-func (s *service) numberOfEditors() int {
-	members := s.GetMembers()
-
-	n := 0
-	for _, m := range members {
-		if isEditor(m.Level) {
-			n++
-		}
-	}
-
-	return n
 }
 
 func (s *service) DeleteMember(id string) error {
@@ -546,27 +446,6 @@ func isEditor(level string) bool {
 }
 
 func (s *service) CreateMember(workspaceID string, accountID string, level string) (*Member, error) {
-	sub := s.GetSubscriptionByWorkspace(workspaceID)
-
-	if sub.Level == "NONE" {
-		return nil, errors.New("cannot create member on workspace without plan")
-	}
-
-	if isEditor(level) {
-		members := s.GetMembersByWorkspace(workspaceID)
-
-		n := 0
-		for _, m := range members {
-			if isEditor(m.Level) {
-				n++
-			}
-		}
-
-		if n >= sub.NumberOfEditors {
-			return nil, errors.New("subscription exceeded - please contact the owner of the workspace")
-		}
-	}
-
 	// Store member
 	member := &Member{
 		ID:          uuid.Must(uuid.NewV7()).String(),
@@ -640,15 +519,6 @@ func (s *service) ChangeGeneralInfo(EUVAT string, externalBillingInfo string) er
 
 	w.EUVAT = EUVAT
 	w.ExternalBillingEmail = externalBillingInfo
-
-	if len(w.ExternalCustomerID) > 0 {
-		params := &stripe.CustomerParams{}
-		params.Email = stripe.String(externalBillingInfo)
-		_, err := customer.Update(w.ExternalCustomerID, params)
-		if err != nil {
-			return err
-		}
-	}
 
 	s.r.StoreWorkspace(w)
 

@@ -35,11 +35,6 @@ type Repository interface {
 	FindMembersByWorkspace(id string) ([]*Member, error)
 	DeleteMember(wsid string, id string)
 
-	StoreSubscription(z *Subscription)
-	FindSubscriptionsByWorkspace(id string) ([]*Subscription, error)
-	FindSubscriptionsByAccount(accID string) ([]*Subscription, error)
-	FindSubscriptionByExternalID(externalSubID string) (*Subscription, error)
-
 	StoreInvite(x *Invite)
 	DeleteInvite(wsid string, id string)
 	GetInviteByCode(code string) (*Invite, error)
@@ -277,44 +272,6 @@ func (a *repo) FindMembersByWorkspace(id string) ([]*Member, error) {
 	if err := a.tx.Select(&x, "SELECT m.workspace_id, m.id, m.account_id, m.level, m.created_at, a.name, a.email FROM members m INNER JOIN accounts a ON m.account_id = a.id WHERE m.workspace_id = $1 ORDER by m.created_at DESC ", id); err != nil {
 		//if err := a.tx.Select(&x, "SELECT * FROM members m WHERE m.workspace_id = $1 ", id); err != nil {
 		return nil, err
-	}
-	return x, nil
-}
-
-// Subscriptions
-
-const storeSubQuery = "INSERT INTO subscriptions (id, workspace_id,level, number_of_editors, from_date,expiration_date, created_by_name, created_at, last_modified, last_modified_by_name, status, external_customer_id, external_plan_id, external_subscription_id,external_subscription_item_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) ON CONFLICT (workspace_id, id) DO UPDATE SET level = $3, number_of_editors = $4, from_date = $5,expiration_date = $6, created_by_name = $7, created_at = $8, last_modified = $9, last_modified_by_name = $10, status = $11, external_customer_id = $12, external_plan_id = $13,  external_subscription_id = $14, external_subscription_item_id = $15"
-
-func (a *repo) StoreSubscription(x *Subscription) {
-	a.tx.MustExec(storeSubQuery, x.ID, x.WorkspaceID, x.Level, x.NumberOfEditors, x.FromDate, x.ExpirationDate, x.CreatedByName, x.CreatedAt, x.LastModified, x.LastModifiedByName, x.Status, x.ExternalCustomerID, x.ExternalPlanID, x.ExternalSubscriptionID, x.ExternalSubscriptionItemID)
-}
-
-func (a *repo) FindSubscriptionsByWorkspace(id string) ([]*Subscription, error) {
-	x := []*Subscription{}
-	err := a.tx.Select(&x, "SELECT * FROM subscriptions WHERE workspace_id = $1 order by created_at desc", id)
-	if err != nil {
-		log.Println(err)
-		return nil, fmt.Errorf("no subscriptions found: %w", err)
-	}
-	return x, nil
-}
-
-func (a *repo) FindSubscriptionsByAccount(accID string) ([]*Subscription, error) {
-	x := []*Subscription{}
-
-	err := a.tx.Select(&x, "SELECT DISTINCT ON (s.workspace_id) * FROM subscriptions s WHERE s.workspace_id IN  (select m.workspace_id from members m where m.account_id = $1) order by s.workspace_id, s.from_date desc", accID)
-	if err != nil {
-		log.Println(err)
-		return nil, fmt.Errorf("no subscriptions found: %w", err)
-	}
-
-	return x, nil
-}
-
-func (a *repo) FindSubscriptionByExternalID(externalSubID string) (*Subscription, error) {
-	x := &Subscription{}
-	if err := a.tx.Get(x, "SELECT * FROM subscriptions  WHERE external_subscription_id = $1", externalSubID); err != nil {
-		return nil, fmt.Errorf("no subscription found: %w", err)
 	}
 	return x, nil
 }

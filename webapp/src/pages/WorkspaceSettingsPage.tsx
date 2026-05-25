@@ -2,7 +2,7 @@ import { Button } from '../components/elements'
 import React, { Component, FunctionComponent, useState, Dispatch } from 'react';
 import { RouteComponentProps, } from 'react-router'
 import { AppState, AllActions } from '../store'
-import { application, getWorkspaceByName, getMembership, getSubscription } from '../store/application/selectors';
+import { application, getWorkspaceByName, getMembership } from '../store/application/selectors';
 import { connect } from 'react-redux'
 import { IApplication, IMembership, IInvite } from '../store/application/types';
 import TimeAgo from 'react-timeago'
@@ -10,7 +10,7 @@ import { API_GET_MEMBERS, API_UPDATE_MEMBER_LEVEL, API_DELETE_MEMBER, API_GET_IN
 import { Formik, FormikHelpers as FormikActions, FormikProps, Form, Field, } from 'formik';
 import * as Yup from 'yup';
 import { newMessage } from '../store/application/actions';
-import { isEditor, subscriptionLevelToText, memberLevelToTitle, subIsInactive } from '../core/misc';
+import { isEditor, memberLevelToTitle } from '../core/misc';
 import { CardLayout } from '../components/elements';
 import { receiveAppAction } from '../store/application/actions';
 
@@ -45,7 +45,6 @@ interface State {
     reallySureWarning: boolean
     allowExternalSharing: boolean
     euVat: string,
-    externalBillingEmail: string,
     loading: boolean
 }
 
@@ -61,7 +60,6 @@ class WorkspaceSettingsPage extends Component<Props, State> {
             reallySureWarning: false,
             allowExternalSharing: false,
             euVat: "",
-            externalBillingEmail: "",
             loading: true
         }
     }
@@ -73,7 +71,6 @@ class WorkspaceSettingsPage extends Component<Props, State> {
         const ws = getWorkspaceByName(this.props.application, this.props.match.params.workspaceName)!
         this.setState({ allowExternalSharing: ws.allowExternalSharing })
         this.setState({ euVat: ws.euVat })
-        this.setState({ externalBillingEmail: ws.externalBillingEmail })
         this.setState({ loading: false })
     }
 
@@ -109,13 +106,10 @@ class WorkspaceSettingsPage extends Component<Props, State> {
         } else {
             const ws = getWorkspaceByName(this.props.application, this.props.match.params.workspaceName)!
             const m = getMembership(this.props.application, ws.id)
-            const s = getSubscription(this.props.application, ws.id)
-            const hosted = this.props.application.mode === "hosted"
-            const hasExpired = subIsInactive(s)
             type changeRoleForm = { level: string }
             type inviteForm = { email: string, level: string }
 
-            type orgInfoForm = { euVat: string, externalBillingEmail: string }
+            type orgInfoForm = { euVat: string }
 
             const MemberBox: FunctionComponent<{ member: IMembership }> = (props) => {
                 const [show, setShow] = useState(false);
@@ -138,7 +132,7 @@ class WorkspaceSettingsPage extends Component<Props, State> {
                             <div className="flex flex-row ">
 
                                 <div className="text-xs mt-3 flex-grow">
-                                    {!hasExpired && <Formik
+                                    <Formik
                                         initialValues={{ level: props.member.level }}
 
                                         validationSchema={Yup.object().shape({
@@ -184,7 +178,6 @@ class WorkspaceSettingsPage extends Component<Props, State> {
                                             </Form>
                                         )}
                                     </Formik>
-                                    }
                                 </div>
 
                                 <div className="flex text-xs mt-3 ml-3  justify-right">
@@ -271,242 +264,74 @@ class WorkspaceSettingsPage extends Component<Props, State> {
                         }
                     </CardLayout>
 
-
-                    {(m.level === "OWNER" && hosted) ?
-                        <CardLayout title="Plan">
-                            <div className="flex flex-col">
-
-                                <div>
-                                    <div className="flex flex-row p-2">
-                                        <div className="w-48 font-medium">Plan</div> <div>{subscriptionLevelToText(s.level)}</div>
-                                    </div>
-
-                                    <div className="flex flex-row p-2">
-                                        <div className="w-48 font-medium">Status</div>
-                                        <div>
-                                            {(() => {
-                                                switch (s.externalStatus) {
-                                                    case "incomplete":
-                                                        return "Inactive (please pay initial payment)"
-                                                    case "incomplete_expired":
-                                                        return "Inactive (initial payment not received)"
-                                                    case "active":
-                                                        return "Active (subscribed to a paid monthly plan)"
-                                                    case "trialing":
-                                                        return subIsInactive(s) ? "Inactive (trial ended)" : "Active (trial)"
-                                                    case "past_due":
-                                                        return "Inactive (payment is past due)"
-                                                    case "canceled":
-                                                        return "Inactive (canceled by user or  due to unpaid invoice)"
-                                                    default:
-                                                        break;
-                                                }
-                                            })()
-                                            }
-
-
-
-                                        </div>
-                                    </div>
-                                    {!subIsInactive(s) ? <div>
-                                        <div className="flex flex-row p-2">
-                                            <div className="w-48  font-medium">Number of members</div> <div>{s.numberOfEditors}</div>
-                                        </div>
-                                        <div className="flex flex-row p-2">
-                                            <div className="w-48 font-medium">Start time </div> <div>{new Date(s.fromDate).toLocaleString([], { year: "numeric", month: "numeric", day: "numeric", hour: '2-digit', minute: '2-digit' })}</div>
-                                        </div>
-                                        <div className="flex flex-row p-2">
-                                            <div className="w-48 font-medium">Expiration time </div> <div>{new Date(s.expirationDate).toLocaleString([], { year: "numeric", month: "numeric", day: "numeric", hour: '2-digit', minute: '2-digit' })}</div>
-                                        </div>
-                                    </div> :
-                                        null
-                                    }
-
-
-                                </div>
-                                <div className="mt-5 mb-2 ">
-                                    <Button primary handleOnClick={() => this.props.history.push("/" + ws.name + "/subscription")} title={"Change plan"}></Button>
-                                </div>
-                            </div>
-                        </CardLayout>
-                        :
-                        null
-                    }
-
-                    {(m.level === "OWNER" && hosted) ?
-                        <CardLayout title="Billing information">
-                            <Formik
-                                initialValues={{ euVat: this.state.euVat, externalBillingEmail: this.state.externalBillingEmail }}
-
-
-                                validationSchema={Yup.object().shape({
-                                    externalBillingEmail: Yup.string().email("Invalid email address")
-                                        .required('Required.')
-                                })}
-
-                                onSubmit={(values: orgInfoForm, actions: FormikActions<orgInfoForm>) => {
-
-
-                                    API_CHANGE_GENERAL_INFORMATION(ws.id, values.euVat, values.externalBillingEmail)
-                                        .then((response) => {
-                                            if (response.ok) {
-                                                this.props.newMessage("success", "settings changed")
-                                                this.setState({ euVat: values.euVat, externalBillingEmail: values.externalBillingEmail })
-                                            }
-                                            else {
-                                                response.json().then((data: any) => {
-                                                    this.props.newMessage("fail", data.message)
-                                                })
-                                            }
-                                        }
-                                        )
-                                }}
-                            >
-                                {(formikBag: FormikProps<orgInfoForm>) => (
-                                    <Form>
-                                        <div className="flex flex-col">
-                                            <div className="flex flex-row p-2">
-                                                <div className="w-48 font-medium">EU VAT</div>
-                                                <div>
-                                                    <Field
-                                                        name="euVat"
-                                                        component="input"
-                                                        className="rounded p-2 border mr-2"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-row p-2">
-                                                <div className="w-48 font-medium">Billing e-mail address</div>
-                                                <div>
-                                                    <Field
-                                                        name="externalBillingEmail"
-                                                        component="input"
-                                                        className="rounded p-2 border mr-2"
-                                                        placeholder="Email address"
-                                                    />
-                                                    {formikBag.touched.externalBillingEmail && formikBag.errors.externalBillingEmail && <div className="text-red-500 font-bold text-xs">{formikBag.errors.externalBillingEmail}</div>}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <span className="text-xs"><Button secondary submit title="Save" /></span>
-                                    </Form>
-                                )}
-                            </Formik>
-                        </CardLayout>
-                        :
-                        null
-                    }
-
-
-                    {/* {(m.level === "ADMIN" || m.level === "OWNER") && s.level === SubscriptionLevels.PRO ?
-                    <CardLayout title="Private link">
-                        {
-                            (() => {
-
-                                const submit = () => {
-
-                                    API_CHANGE_ALLOW_EXTERNAL_SHARING(ws.id, !this.state.allowExternalSharing)
-                                        .then((response) => {
-                                            if (response.ok) {
-                                                this.setState({ allowExternalSharing: !this.state.allowExternalSharing })
-
-                                                this.props.newMessage("success", "setting changed")
-                                            }
-                                            else {
-                                                response.json().then((data: any) => {
-                                                    this.props.newMessage("fail", data.message)
-                                                })
-                                            }
-                                        }
-                                        )
-                                }
-
-                                return (
-                                    <div >
-                                        <p><input onChange={submit} checked={this.state.allowExternalSharing} type="checkbox" /> Projects can be shared with people who are not members of the workspace (view only).</p>
-                                    </div>
-                                )
-                            })()
-
-                        }
-                    </CardLayout>
-                    :
-                    null
-                } */}
-
-
-
                     {(m.level === "ADMIN" || m.level === "OWNER") ?
                         <CardLayout title="Workspace invites">
                             {
                                 <div>
-                                    {!hasExpired &&
-                                        <div className="">
-                                            <Formik
-                                                initialValues={{ email: "", level: "VIEWER" }}
+                                    <div className="">
+                                        <Formik
+                                            initialValues={{ email: "", level: "VIEWER" }}
 
-                                                validationSchema={Yup.object().shape({
-                                                    email: Yup.string()
-                                                        .email('Invalid.')
-                                                        .required('Required.'),
-                                                    level: Yup.string()
-                                                        .required('Required.')
-                                                })}
+                                            validationSchema={Yup.object().shape({
+                                                email: Yup.string()
+                                                    .email('Invalid.')
+                                                    .required('Required.'),
+                                                level: Yup.string()
+                                                    .required('Required.')
+                                            })}
 
-                                                onSubmit={(values: inviteForm, actions: FormikActions<inviteForm>) => {
-                                                    API_CREATE_INVITE(ws.id, values.email, values.level)
-                                                        .then((response) => {
-                                                            if (response.ok) {
-                                                                this.loadInvites()
-                                                                this.props.newMessage("success", "invite sent")
-                                                            }
-                                                            else {
-                                                                response.json().then((data: any) => {
-                                                                    this.props.newMessage("fail", data.message)
-                                                                })
-                                                            }
+                                            onSubmit={(values: inviteForm, actions: FormikActions<inviteForm>) => {
+                                                API_CREATE_INVITE(ws.id, values.email, values.level)
+                                                    .then((response) => {
+                                                        if (response.ok) {
+                                                            this.loadInvites()
+                                                            this.props.newMessage("success", "invite sent")
                                                         }
-                                                        )
-                                                }}
+                                                        else {
+                                                            response.json().then((data: any) => {
+                                                                this.props.newMessage("fail", data.message)
+                                                            })
+                                                        }
+                                                    }
+                                                    )
+                                            }}
 
-                                            >
-                                                {(formikBag: FormikProps<inviteForm>) => (
-                                                    <Form>
-                                                        {formikBag.status && formikBag.status.msg && <div>{formikBag.status.msg}</div>}
+                                        >
+                                            {(formikBag: FormikProps<inviteForm>) => (
+                                                <Form>
+                                                    {formikBag.status && formikBag.status.msg && <div>{formikBag.status.msg}</div>}
 
-                                                        <div className="flex flex-col ">
-                                                            <div className="flex flex-col m-1">
+                                                    <div className="flex flex-col ">
+                                                        <div className="flex flex-col m-1">
 
-                                                                <Field
-                                                                    name="email"
-                                                                    component="input"
-                                                                    className="rounded p-2 border  w-64  "
-                                                                    placeholder="email"
-                                                                >
-                                                                </Field>
-                                                                {formikBag.touched.email && formikBag.errors.email && <div className="text-red-500 font-bold text-xs">{formikBag.errors.email}</div>}
-                                                            </div>
-
-                                                            <div className="flex flex-col m-1">
-                                                                <Field
-                                                                    name="level"
-                                                                    component="select"
-                                                                    className="rounded p-2 border  w-64  bg-white  "
-                                                                >
-                                                                    <option value="VIEWER">{memberLevelToTitle("VIEWER")}</option>
-                                                                    <option value="EDITOR">{memberLevelToTitle("EDITOR")}</option>
-                                                                    <option value="ADMIN">{memberLevelToTitle("ADMIN")}</option>
-                                                                    <option value="OWNER">{memberLevelToTitle("OWNER")}</option>
-                                                                </Field>
-                                                            </div>
-                                                            <div className="text-xs m-1"><Button submit secondary title="Send invitation" /></div>
+                                                            <Field
+                                                                name="email"
+                                                                component="input"
+                                                                className="rounded p-2 border  w-64  "
+                                                                placeholder="email"
+                                                            >
+                                                            </Field>
+                                                            {formikBag.touched.email && formikBag.errors.email && <div className="text-red-500 font-bold text-xs">{formikBag.errors.email}</div>}
                                                         </div>
-                                                    </Form>
-                                                )}
-                                            </Formik>
 
-                                        </div>
-                                    }
+                                                        <div className="flex flex-col m-1">
+                                                            <Field
+                                                                name="level"
+                                                                component="select"
+                                                                className="rounded p-2 border  w-64  bg-white  "
+                                                            >
+                                                                <option value="VIEWER">{memberLevelToTitle("VIEWER")}</option>
+                                                                <option value="EDITOR">{memberLevelToTitle("EDITOR")}</option>
+                                                                <option value="ADMIN">{memberLevelToTitle("ADMIN")}</option>
+                                                                <option value="OWNER">{memberLevelToTitle("OWNER")}</option>
+                                                            </Field>
+                                                        </div>
+                                                        <div className="text-xs m-1"><Button submit secondary title="Send invitation" /></div>
+                                                    </div>
+                                                </Form>
+                                            )}
+                                        </Formik>
+                                    </div>
 
                                     <div className="mt-2">
                                         <div className="flex flex-col  max-w-2xl  " >
@@ -549,7 +374,7 @@ class WorkspaceSettingsPage extends Component<Props, State> {
                                                                     )}
                                                                 </Formik>
                                                             </div>
-                                                            {!hasExpired && <div className="ml-1">
+                                                            <div className="ml-1">
                                                                 <Formik
                                                                     initialValues={{}}
                                                                     onSubmit={(values: {}, actions: FormikActions<{}>) => {
@@ -574,7 +399,7 @@ class WorkspaceSettingsPage extends Component<Props, State> {
                                                                         </Form>
                                                                     )}
                                                                 </Formik>
-                                                            </div>}
+                                                            </div>
 
                                                         </div>
                                                     </div>
@@ -628,7 +453,7 @@ class WorkspaceSettingsPage extends Component<Props, State> {
                         (m.level === "OWNER") ? // Admin or higher
                             <CardLayout title="Delete workspace">
                                 <div>
-                                    <p >All projects in this workspace will be deleted permanently. You need to cancel any active plan before the workspace can be deleted.  </p>
+                                    <p >All projects in this workspace will be deleted permanently.</p>
 
                                     <Formik
                                         initialValues={{}}

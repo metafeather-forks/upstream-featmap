@@ -11,7 +11,6 @@ export const applicationInitialState: State = {
         workspaces: [],
         memberships: [],
         messages: [],
-        subscriptions: [],
     }
 }
 

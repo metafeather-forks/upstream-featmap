@@ -1,4 +1,4 @@
-import { Roles, SubscriptionLevels } from "../../core/misc";
+import { Roles } from "../../core/misc";
 
 
 export interface IApplication {
@@ -7,7 +7,6 @@ export interface IApplication {
     memberships: IMembership[]
     account?: IAccount
     messages: IMessage[]
-    subscriptions: ISubscription[]
 }
 
 export interface IMembership {
@@ -26,7 +25,6 @@ export interface IWorkspace {
     createdAt: string
     allowExternalSharing: boolean
     euVat: string
-    externalBillingEmail: string
     status: string
 }
 
@@ -38,21 +36,6 @@ export interface IAccount {
     emailConfirmed: boolean
     emailConfirmationSentTo: string
     emailConfirmationPending: boolean
-}
-
-export interface ISubscription {
-    id: string
-    workspaceId: string
-    level: SubscriptionLevels
-    numberOfEditors: number,
-    fromDate: string
-    expirationDate: string
-    createdByName: string
-    createdAt: string
-    lastModified: string
-    lastModifiedByName: string
-    externalStatus: string
-    externalPlanId: string
 }
 
 export interface IInvite {
@@ -71,4 +54,3 @@ export interface IInvite {
 export type messageTypes = "success" | "fail"
 
 export interface IMessage { id: string, type: messageTypes, message: string }
-

@@ -11,7 +11,7 @@ const store = configureStore()
 ReactDOM.render(
     <Provider store={store}>
         <Router >
-            <App application={{ mode: "", workspaces: [], memberships: [], messages: [], subscriptions: [] }} />
+            <App application={{ mode: "", workspaces: [], memberships: [], messages: [] }} />
         </Router>
     </Provider>
     , document.getElementById('root'));

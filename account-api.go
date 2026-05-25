@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -29,25 +28,21 @@ func accountAPI(r chi.Router) {
 
 func getApp(w http.ResponseWriter, r *http.Request) {
 	type response struct {
-		Mode          string          `json:"mode"`
-		Account       *Account        `json:"account"`
-		Workspaces    []*Workspace    `json:"workspaces"`
-		Memberships   []*Member       `json:"memberships"`
-		Subscriptions []*Subscription `json:"subscriptions"`
+		Mode        string       `json:"mode"`
+		Account     *Account     `json:"account"`
+		Workspaces  []*Workspace `json:"workspaces"`
+		Memberships []*Member    `json:"memberships"`
 	}
 
 	s := GetEnv(r).Service
 
 	s.UpdateLatestActivityNow()
 
-	ss := s.GetSubscriptionsByAccount()
-	log.Println(len(ss))
 	render.JSON(w, r, response{
-		Mode:          s.GetConfig().Mode,
-		Account:       s.GetAccountObject(),
-		Workspaces:    s.GetWorkspaces(),
-		Memberships:   s.GetMembersByAccount(),
-		Subscriptions: s.GetSubscriptionsByAccount(),
+		Mode:        s.GetConfig().Mode,
+		Account:     s.GetAccountObject(),
+		Workspaces:  s.GetWorkspaces(),
+		Memberships: s.GetMembersByAccount(),
 	})
 }
 
@@ -125,7 +120,7 @@ func createWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s := GetEnv(r).Service
-	workspace, _, _, err := s.CreateWorkspace(data.Name)
+	workspace, _, err := s.CreateWorkspace(data.Name)
 	if err != nil {
 		_ = render.Render(w, r, ErrInvalidRequest(err))
 		return
