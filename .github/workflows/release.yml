@@ -1,0 +1,29 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+        working-directory: webapp
+      - run: npm run build
+        working-directory: webapp
+      - run: mkdir -p dist
+      - run: GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/featmap-linux-amd64 .
+      - run: GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/featmap-darwin-amd64 .
+      - run: GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/featmap-windows-amd64.exe .
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
