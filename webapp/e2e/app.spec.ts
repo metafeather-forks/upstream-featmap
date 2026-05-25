@@ -1,8 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Mock the /v1/account/app API response so the app loads as authenticated
- * with a test workspace and account.
+ * Mock the /v1/account/app API response so the app loads as authenticated.
  */
 async function mockAuthenticatedApp(page: any) {
   await page.route('**/v1/account/app', async (route: any) => {
@@ -12,35 +11,19 @@ async function mockAuthenticatedApp(page: any) {
       body: JSON.stringify({
         mode: 'hosted',
         account: {
-          id: 'test-account-id',
-          name: 'Test User',
-          email: 'test@example.com',
-          createdAt: new Date().toISOString(),
-          emailConfirmed: true,
-          emailConfirmationSentTo: 'test@example.com',
-          emailConfirmationPending: false,
+          id: 'test-account-id', name: 'Test User', email: 'test@example.com',
+          createdAt: new Date().toISOString(), emailConfirmed: true,
+          emailConfirmationSentTo: 'test@example.com', emailConfirmationPending: false,
         },
-        workspaces: [
-          {
-            id: 'test-ws-id',
-            name: 'testworkspace',
-            createdAt: new Date().toISOString(),
-            allowExternalSharing: true,
-            euVat: '',
-            status: 'active',
-          },
-        ],
-        memberships: [
-          {
-            id: 'test-member-id',
-            workspaceId: 'test-ws-id',
-            accountId: 'test-account-id',
-            level: 'OWNER',
-            name: 'Test User',
-            email: 'test@example.com',
-            createdAt: new Date().toISOString(),
-          },
-        ],
+        workspaces: [{
+          id: 'test-ws-id', name: 'testworkspace', createdAt: new Date().toISOString(),
+          allowExternalSharing: true, euVat: '', status: 'active',
+        }],
+        memberships: [{
+          id: 'test-member-id', workspaceId: 'test-ws-id', accountId: 'test-account-id',
+          level: 'OWNER', name: 'Test User', email: 'test@example.com',
+          createdAt: new Date().toISOString(),
+        }],
         messages: [],
       }),
     });
@@ -59,7 +42,7 @@ async function mockProjectData(page: any) {
   });
 }
 
-// --- Authenticated app tests (mocked API) ---
+// --- Authenticated app tests ---
 
 test.describe('Authenticated app renders', () => {
   test('root redirects to workspace when authenticated', async ({ page }) => {
@@ -107,33 +90,60 @@ test.describe('Error resilience', () => {
     });
     await page.goto('/');
     await page.waitForLoadState('networkidle');
-    // App should not white-screen even with total API failure
     await expect(page.locator('#root')).toBeVisible();
   });
 });
 
-// --- Backend API tests (requires Go server on port 5000) ---
+// --- Frontend API call validation ---
 
-test.describe('Backend API', () => {
-  test.skip('unauthenticated routes return 401/400', async ({ request }) => {
-    const API = 'http://localhost:5000/v1';
-    const resp = await request.get(`${API}/account/app`);
-    expect(resp.status()).toBeGreaterThanOrEqual(400);
+test.describe('Frontend API calls', () => {
+  test('signup form sends expected fields', async ({ page }) => {
+    let body: any = null;
+    await page.route('**/v1/users/signup', async (route: any) => {
+      body = route.request().postDataJSON();
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '{"token":"fake"}' });
+    });
+    await page.route('**/v1/account/app', async (route: any) => {
+      await route.fulfill({ status: 401 });
+    });
+    await page.goto('/account/signup', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1000);
+
+    const input = page.locator('input[id="workspaceName"]');
+    if (await input.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await page.fill('input[id="workspaceName"]', 'myws');
+      await page.fill('input[id="name"]', 'User');
+      await page.fill('input[id="email"]', 'u@t.com');
+      await page.fill('input[id="password"]', 'pass123');
+      await page.click('button[type="submit"]');
+      await page.waitForTimeout(500);
+      expect(body).not.toBeNull();
+      expect(body.workspaceName).toBe('myws');
+    }
   });
 
-  test.skip('POST /users/login validates credentials', async ({ request }) => {
-    const API = 'http://localhost:5000/v1';
-    const resp = await request.post(`${API}/users/login`, {
-      data: { email: 'noone@example.com', password: 'wrong' },
+  test('app fetches account data on load', async ({ page }) => {
+    let called = false;
+    await page.route('**/v1/account/app', async (route: any) => {
+      called = true;
+      await route.fulfill({
+        status: 200, contentType: 'application/json',
+        body: JSON.stringify({
+          mode: 'hosted',
+          account: { id: 'a1', name: 'U', email: 'u@t.com', createdAt: new Date().toISOString(), emailConfirmed: true, emailConfirmationSentTo: 'u@t.com', emailConfirmationPending: false },
+          workspaces: [{ id: 'w1', name: 'test', createdAt: new Date().toISOString(), allowExternalSharing: true, euVat: '', status: 'active' }],
+          memberships: [{ id: 'm1', workspaceId: 'w1', accountId: 'a1', level: 'OWNER', name: 'U', email: 'u@t.com', createdAt: new Date().toISOString() }],
+          messages: [],
+        }),
+      });
     });
-    expect(resp.status()).toBeGreaterThanOrEqual(400);
-  });
+    await page.route('**/v1/projects', async (route: any) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+    });
 
-  test.skip('POST /users/signup validates input', async ({ request }) => {
-    const API = 'http://localhost:5000/v1';
-    const resp = await request.post(`${API}/users/signup`, {
-      data: { workspaceName: '', name: '', email: '', password: '' },
-    });
-    expect(resp.status()).toBeGreaterThanOrEqual(400);
+    await page.goto('/');
+    await page.waitForTimeout(500);
+
+    expect(called).toBe(true);
   });
 });

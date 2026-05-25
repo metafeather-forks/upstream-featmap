@@ -135,6 +135,3 @@ And finally run it.
 ```bash
 docker-compose up -d
 ```
-
-## License
-Featmap is licensed under Business Source License 1.1. See [license](https://github.com/amborle/featmap/blob/master/LICENSE)
