@@ -47,10 +47,6 @@ docker-build:
 
 ## docker-up: start services with docker-compose
 docker-up:
-	FEATMAP_DB=$(FEATMAP_DB) \
-	FEATMAP_DB_USER=$(FEATMAP_DB_USER) \
-	FEATMAP_DB_PASSWORD=$(FEATMAP_DB_PASSWORD) \
-	FEATMAP_HTTP_PORT=$(FEATMAP_HTTP_PORT) \
 	docker-compose up -d
 
 ## help: show this help

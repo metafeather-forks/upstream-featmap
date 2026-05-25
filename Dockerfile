@@ -1,14 +1,25 @@
-FROM golang:alpine
+FROM golang:alpine AS builder
 WORKDIR /src
-RUN apk add --update npm git
-COPY ./webapp/package.json webapp/package.json
-RUN cd ./webapp && \
-    npm install
+
+# Install Node.js for webapp build
+RUN apk add --no-cache nodejs npm
+
+# Install webapp dependencies (leveraging Docker layer cache)
+COPY webapp/package.json webapp/package-lock.json* webapp/
+RUN cd webapp && npm install
+
+# Copy source and build webapp (required for go:embed)
 COPY . .
-RUN cd ./webapp && \
-    npm run build
+RUN cd webapp && npm run build
 
-RUN go build -ldflags="-s -w" -o /opt/featmap/featmap . && \
-    chmod 775 /opt/featmap/featmap
+# Build Go binary (go:embed picks up webapp/build)
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /opt/featmap/featmap .
 
-ENTRYPOINT cd /opt/featmap && ./featmap
+# Minimal runtime image
+FROM alpine:3.21
+RUN apk add --no-cache ca-certificates
+COPY --from=builder /opt/featmap/featmap /opt/featmap/featmap
+
+EXPOSE 5000
+WORKDIR /opt/featmap
+ENTRYPOINT ["./featmap"]

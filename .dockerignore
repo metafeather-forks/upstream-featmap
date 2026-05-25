@@ -1,0 +1,5 @@
+webapp/node_modules
+webapp/build
+bin
+.git
+data

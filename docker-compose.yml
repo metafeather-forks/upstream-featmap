@@ -1,30 +1,38 @@
-version: "2.1"
 services:
-        postgres:
-                image: postgres:11-alpine
-                restart: always
-                volumes:
-                        - ${PWD}/data:/var/lib/postgresql/data
-                environment:
-                        POSTGRES_DB: ${FEATMAP_DB}
-                        POSTGRES_USER: ${FEATMAP_DB_USER}
-                        POSTGRES_PASSWORD: ${FEATMAP_DB_PASSWORD}
-                healthcheck:
-                        test: ["CMD-SHELL", "pg_isready -U ${FEATMAP_DB_USER}"]
-                        interval: 10s
-                        timeout: 5s
-                        retries: 5
-        featmap:
-                image: amborle/featmap
-                restart: always
-                build: 
-                        context: .
-                        dockerfile: Dockerfile
-                ports:
-                        - ${FEATMAP_HTTP_PORT}:${FEATMAP_HTTP_PORT}
-                depends_on: 
-                    postgres:
-                        condition: service_healthy
-                volumes:
-                        - ${PWD}/conf.json:/opt/featmap/conf.json
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    volumes:
+      - ${PWD}/data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${FEATMAP_DB:-featmap}
+      POSTGRES_USER: ${FEATMAP_DB_USER:-featmap}
+      POSTGRES_PASSWORD: ${FEATMAP_DB_PASSWORD:-featmap}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${FEATMAP_DB_USER:-featmap}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  featmap:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${FEATMAP_HTTP_PORT:-5000}:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://${FEATMAP_DB_USER:-featmap}:${FEATMAP_DB_PASSWORD:-featmap}@postgres:5432/${FEATMAP_DB:-featmap}?sslmode=disable"
+      JWT_SECRET: ${FEATMAP_JWT_SECRET:-ChangeMeForProduction}
+      APP_SITE_URL: ${FEATMAP_APP_SITE_URL:-http://localhost:5000}
+      PORT: "5000"
+      ENVIRONMENT: ${FEATMAP_ENVIRONMENT:-development}
+      MODE: ${FEATMAP_MODE:-hosted}
+      EMAIL_FROM: ${FEATMAP_EMAIL_FROM:-}
+      SMTP_SERVER: ${FEATMAP_SMTP_SERVER:-}
+      SMTP_PORT: ${FEATMAP_SMTP_PORT:-587}
+      SMTP_USER: ${FEATMAP_SMTP_USER:-}
+      SMTP_PASS: ${FEATMAP_SMTP_PASS:-}
