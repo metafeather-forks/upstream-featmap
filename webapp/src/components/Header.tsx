@@ -13,7 +13,7 @@ class Header extends Component<Props> {
 
   render() {
     return (
-      <header className="bg-gray-200">
+      <header className="bg-gray-200" role="banner">
         <div className="flex items-center p-1 ">
           <div className="flex text-lg   m-1 w-24 ">
             <b><Link to="/">Featmap</Link></b>
@@ -27,7 +27,7 @@ class Header extends Component<Props> {
 
           <div className="flex flex-grow justify-end   ">
             <div className="flex p-1  rounded items-center ">
-              <ContextMenu icon="account_circle" >
+              <ContextMenu icon="account_circle" aria-label="Account menu">
                 <div className="rounded bg-white shadow-md absolute mt-8 top-0 right-0 min-w-full text-sm" >
                   <ul className="list-reset">
                     {this.props.workspaceName ?

@@ -607,7 +607,7 @@ class Board extends Component<Props, State> {
                     {(providedDroppable: DroppableProvided, snapshotDroppable: DroppableStateSnapshot) => {
 
                       return (
-                        <div className="flex">
+                        <div role="list" aria-label="Milestones" className="flex">
                           <div className="flex flex-col "
                             ref={providedDroppable.innerRef}
                             {...providedDroppable.droppableProps}

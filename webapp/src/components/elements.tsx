@@ -1,15 +1,15 @@
 
-import React, { SFC, FunctionComponent } from 'react';
+import React, { FC, FunctionComponent } from 'react';
 
-export const OldButton: SFC<{ title: string }> = (props) => (
+export const OldButton: FC<{ title: string }> = (props) => (
     <div className="p-2 flex-no-shrink whitespace-nowrap  rounded  text-xs  font-bold bg-gray-200 uppercase ">{props.title}</div>
 )
 
 
-export const Button: SFC<{ iconColor?: string, title?: string, small?: boolean, button?: boolean, secondary?: boolean, icon?: string, handleOnClick?: () => void, warning?: boolean, primary?: boolean, submit?: boolean, noborder?: boolean }> = (props) => (
-    <button type={(props.submit ? "submit" : "button")} onClick={props.handleOnClick}>
+export const Button: FC<{ iconColor?: string, title?: string, small?: boolean, button?: boolean, secondary?: boolean, icon?: string, handleOnClick?: () => void, warning?: boolean, primary?: boolean, submit?: boolean, noborder?: boolean, ariaLabel?: string }> = (props) => (
+    <button type={(props.submit ? "submit" : "button")} onClick={props.handleOnClick} aria-label={props.ariaLabel || props.title}>
         <div className={" flex flex-no-shrink whitespace-nowrap    font-medium items-center " + (props.small ? " p-1 " : " p-2 ") + (!props.noborder && " border ") + (!props.primary && " text-black  ") + (props.primary && " text-white bg-green-400  border-green-400 ") + (props.secondary && " bg-gray-200  border-gray-200 ") + (props.warning && " border-red-500 text-red-500 font-semibold")}>
-            {props.icon && <div className="flex"><i style={{ fontSize: "18px" }} className={"material-icons " + (props.iconColor ? props.iconColor : "")} > {props.icon}</i ></div>}
+            {props.icon && <div className="flex"><i style={{ fontSize: "18px" }} className={"material-icons " + (props.iconColor ? props.iconColor : "")} aria-hidden="true"> {props.icon}</i ></div>}
             <div className="flex ml-1 ">{props.title}</div>
         </div>
     </button>

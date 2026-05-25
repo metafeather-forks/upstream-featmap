@@ -29,7 +29,7 @@ interface Props {
 class App extends Component<Props, {}> {
   render() {
     return (
-      <div id="main">
+      <div id="main" role="main">
         <Switch>
           <Route path="/link/:key" component={ExternalLinkPage} />
           <Route exact path="/account/signupsuccess" component={SignupSuccessPage} />
