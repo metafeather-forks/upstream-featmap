@@ -10,8 +10,8 @@ import (
 	"github.com/amborle/featmap/lexorank"
 
 	"github.com/asaskevich/govalidator"
-	jwt "github.com/dgrijalva/jwt-go"
-	"github.com/go-chi/jwtauth"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/go-chi/jwtauth/v5"
 	"github.com/jmoiron/sqlx"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
