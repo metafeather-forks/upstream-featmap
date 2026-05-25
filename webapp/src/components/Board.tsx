@@ -18,7 +18,7 @@ import { connect } from 'react-redux'
 import { IFeature } from '../store/features/types';
 import { ISubWorkflow } from '../store/subworkflows/types';
 import { IMilestone } from '../store/milestones/types';
-import { DraggableProvided, DraggableStateSnapshot, DroppableProvided, DroppableStateSnapshot, DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { DraggableProvided, DraggableStateSnapshot, DroppableProvided, DroppableStateSnapshot, DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { IApplication } from '../store/application/types';
 import CreateCardModal from './CreateCardModal';
 import Card from './Card';
