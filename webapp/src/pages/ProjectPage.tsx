@@ -233,7 +233,7 @@ class ProjectPage extends Component<Props, State> {
                                             <div className="flex items-center flex-grow">
                                                 <div className="flex flex-grow mr-1 " ><Link target="_blank" className="link" to={"/link/" + proj.externalLink}>Share link </Link></div>
                                                 <div>
-                                                    {document.queryCommandSupported('copy') && <button onClick={() => this.copyToClipboard(process.env.REACT_APP_BASE_URL + "/link/" + proj.externalLink)}><i style={{ fontSize: "16px" }} className="material-icons text-gray-800">file_copy</i></button>}
+                                                    {document.queryCommandSupported('copy') && <button onClick={() => this.copyToClipboard(import.meta.env.VITE_BASE_URL + "/link/" + proj.externalLink)}><i style={{ fontSize: "16px" }} className="material-icons text-gray-800">file_copy</i></button>}
                                                 </div>
                                                 <div >
                                                     <i style={{ fontSize: "16px" }} className={"material-icons  text-green-500" + (!this.state.copySuccess ? " invisible" : "")}>check_circle</i>

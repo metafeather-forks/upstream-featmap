@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
-	"github.com/pkg/errors"
+	"errors"
 )
 
 func usersAPI(r chi.Router) {

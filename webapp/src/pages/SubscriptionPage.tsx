@@ -90,7 +90,7 @@ class SubscriptionPage extends Component<Props, State> {
         const s = getSubscription(this.props.application, ws.id)
         const ns = mustCreateNewSub(s)
 
-        const priceOfBasic = process.env.REACT_APP_BASIC_PRICE ? parseInt(process.env.REACT_APP_BASIC_PRICE) : 0
+        const priceOfBasic = import.meta.env.VITE_BASIC_PRICE ? parseInt(import.meta.env.VITE_BASIC_PRICE) : 0
 
         interface subscriptionForm {
             action: "basic" | "pro"
@@ -150,7 +150,7 @@ class SubscriptionPage extends Component<Props, State> {
                                                                 response.json().then((session: string) => {
 
                                                                     let Stripe: any = (window as any).Stripe
-                                                                    const stripe = Stripe(process.env.REACT_APP_STRIPE_PK)
+                                                                    const stripe = Stripe(import.meta.env.VITE_STRIPE_PK)
 
                                                                     stripe.redirectToCheckout({
                                                                         sessionId: session,

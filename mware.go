@@ -8,7 +8,7 @@ import (
 	"github.com/go-chi/jwtauth"
 	"github.com/go-chi/render"
 	"github.com/jmoiron/sqlx"
-	"github.com/pkg/errors"
+	"errors"
 )
 
 // Env ...

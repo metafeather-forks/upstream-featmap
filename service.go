@@ -15,8 +15,9 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/jwtauth"
 	"github.com/jmoiron/sqlx"
-	"github.com/pkg/errors"
-	uuid "github.com/satori/go.uuid"
+	"errors"
+	"fmt"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -239,7 +240,7 @@ func (s *service) Register(workspaceName string, name string, email string, pass
 	t := time.Now().UTC()
 
 	workspace := &Workspace{
-		ID:                   uuid.Must(uuid.NewV4(), nil).String(),
+		ID:                   uuid.Must(uuid.NewV7()).String(),
 		Name:                 workspaceName,
 		CreatedAt:            t,
 		AllowExternalSharing: true,
@@ -249,20 +250,20 @@ func (s *service) Register(workspaceName string, name string, email string, pass
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	acc := &Account{
-		ID:                       uuid.Must(uuid.NewV4(), nil).String(),
+		ID:                       uuid.Must(uuid.NewV7()).String(),
 		Name:                     name,
 		Email:                    email,
 		Password:                 string(hash),
 		CreatedAt:                t,
 		EmailConfirmationSentTo:  email,
 		EmailConfirmed:           false,
-		EmailConfirmationKey:     uuid.Must(uuid.NewV4(), nil).String(),
+		EmailConfirmationKey:     uuid.Must(uuid.NewV7()).String(),
 		EmailConfirmationPending: true,
-		PasswordResetKey:         uuid.Must(uuid.NewV4(), nil).String(),
+		PasswordResetKey:         uuid.Must(uuid.NewV7()).String(),
 	}
 
 	sub := &Subscription{
-		ID:                 uuid.Must(uuid.NewV4(), nil).String(),
+		ID:                 uuid.Must(uuid.NewV7()).String(),
 		WorkspaceID:        workspace.ID,
 		Level:              "TRIAL",
 		NumberOfEditors:    100,
@@ -283,7 +284,7 @@ func (s *service) Register(workspaceName string, name string, email string, pass
 	}
 
 	member := &Member{
-		ID:          uuid.Must(uuid.NewV4(), nil).String(),
+		ID:          uuid.Must(uuid.NewV7()).String(),
 		WorkspaceID: workspace.ID,
 		AccountID:   acc.ID,
 		Level:       "OWNER",
@@ -331,11 +332,11 @@ func (s *service) Login(email string, password string) (*Account, error) {
 
 	acc, err := s.r.GetAccountByEmail(strings.ToLower(email))
 	if acc == nil {
-		return nil, errors.Wrap(err, "email not found")
+		return nil, fmt.Errorf("email not found: %w", err)
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(acc.Password), []byte(password)); err != nil {
-		return nil, errors.Wrap(err, "password not correct")
+		return nil, fmt.Errorf("password not correct: %w", err)
 	}
 
 	return acc, nil
@@ -352,7 +353,7 @@ func (s *service) GetAccount(id string) (*Account, error) {
 
 	acc, err := s.r.GetAccount(id)
 	if acc == nil {
-		return nil, errors.Wrap(err, "account not found")
+		return nil, fmt.Errorf("account not found: %w", err)
 	}
 	return acc, nil
 }
@@ -401,7 +402,7 @@ func (s *service) CreateWorkspace(name string) (*Workspace, *Subscription, *Memb
 
 	t := time.Now().UTC()
 	workspace := &Workspace{
-		ID:                   uuid.Must(uuid.NewV4(), nil).String(),
+		ID:                   uuid.Must(uuid.NewV7()).String(),
 		Name:                 name,
 		CreatedAt:            t,
 		AllowExternalSharing: true,
@@ -409,7 +410,7 @@ func (s *service) CreateWorkspace(name string) (*Workspace, *Subscription, *Memb
 		ExternalBillingEmail: s.Acc.Email,
 	}
 	subscription := &Subscription{
-		ID:                 uuid.Must(uuid.NewV4(), nil).String(),
+		ID:                 uuid.Must(uuid.NewV7()).String(),
 		WorkspaceID:        workspace.ID,
 		Level:              "TRIAL",
 		NumberOfEditors:    100,
@@ -422,7 +423,7 @@ func (s *service) CreateWorkspace(name string) (*Workspace, *Subscription, *Memb
 		Status:             "trialing",
 	}
 	member := &Member{
-		ID:          uuid.Must(uuid.NewV4(), nil).String(),
+		ID:          uuid.Must(uuid.NewV7()).String(),
 		WorkspaceID: workspace.ID,
 		AccountID:   s.Acc.ID,
 		Level:       "OWNER",
@@ -440,7 +441,7 @@ func (s *service) GetWorkspace(id string) (*Workspace, error) {
 
 	workspace, err := s.r.GetWorkspace(id)
 	if err != nil {
-		return nil, errors.Wrap(err, "workspace not found")
+		return nil, fmt.Errorf("workspace not found: %w", err)
 	}
 	return workspace, nil
 }
@@ -568,7 +569,7 @@ func (s *service) CreateMember(workspaceID string, accountID string, level strin
 
 	// Store member
 	member := &Member{
-		ID:          uuid.Must(uuid.NewV4(), nil).String(),
+		ID:          uuid.Must(uuid.NewV7()).String(),
 		WorkspaceID: workspaceID,
 		AccountID:   accountID,
 		Level:       level,
@@ -584,7 +585,7 @@ func (s *service) GetMember(accountID string, workspaceID string) (*Member, erro
 
 	member, err := s.r.GetMemberByAccountAndWorkspace(accountID, workspaceID)
 	if member == nil {
-		return nil, errors.Wrap(err, "member not found")
+		return nil, fmt.Errorf("member not found: %w", err)
 	}
 	return member, nil
 }
@@ -690,10 +691,10 @@ func (s *service) CreateInvite(email string, level string) (*Invite, error) {
 
 	x := &Invite{
 		WorkspaceID:    s.Member.WorkspaceID,
-		ID:             uuid.Must(uuid.NewV4(), nil).String(),
+		ID:             uuid.Must(uuid.NewV7()).String(),
 		Email:          email,
 		Level:          level,
-		Code:           uuid.Must(uuid.NewV4(), nil).String(),
+		Code:           uuid.Must(uuid.NewV7()).String(),
 		CreatedBy:      s.Member.ID,
 		CreatedByName:  s.Acc.Name,
 		CreatedAt:      time.Now().UTC(),
@@ -902,7 +903,7 @@ func (s *service) CreateProjectWithID(id string, title string) (*Project, error)
 		Title:         title,
 		CreatedAt:     time.Now().UTC(),
 		CreatedByName: s.Acc.Name,
-		ExternalLink:  uuid.Must(uuid.NewV4(), nil).String(),
+		ExternalLink:  uuid.Must(uuid.NewV7()).String(),
 	}
 
 	p.LastModified = time.Now().UTC()
@@ -1650,7 +1651,7 @@ func (s *service) RenameFeature(id string, title string) (*Feature, error) {
 
 	p, _ := s.r.GetFeature(s.Member.WorkspaceID, id)
 	if p == nil {
-		return nil, errors.Wrap(err, "could not find")
+		return nil, fmt.Errorf("could not find: %w", err)
 	}
 
 	p.Title = title
@@ -1855,7 +1856,7 @@ func (s *service) CreateFeatureCommentWithID(id string, featureID string, post s
 
 	owner := &FeatureCommentOwner{
 		WorkspaceID:      s.Member.WorkspaceID,
-		ID:               uuid.Must(uuid.NewV4(), nil).String(),
+		ID:               uuid.Must(uuid.NewV7()).String(),
 		FeatureCommentID: p.ID,
 		MemberID:         s.Member.ID,
 		ProjectID:        p.ProjectID,
@@ -1990,7 +1991,7 @@ func (s *service) UpdateEmail(email string) error {
 	a := s.Acc
 
 	a.EmailConfirmationSentTo = em
-	a.EmailConfirmationKey = uuid.Must(uuid.NewV4(), nil).String()
+	a.EmailConfirmationKey = uuid.Must(uuid.NewV7()).String()
 	a.EmailConfirmationPending = true
 
 	s.r.StoreAccount(a)

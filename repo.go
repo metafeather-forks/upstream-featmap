@@ -1,10 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/pkg/errors"
 )
 
 // Repository ...
@@ -141,7 +141,7 @@ func (a *repo) SetTx(tx *sqlx.Tx) {
 func (a *repo) GetWorkspace(id string) (*Workspace, error) {
 	workspace := &Workspace{}
 	if err := a.tx.Get(workspace, "SELECT * FROM workspaces WHERE id = $1", id); err != nil {
-		return nil, errors.Wrap(err, "workspace not found")
+		return nil, fmt.Errorf("workspace not found: %w", err)
 	}
 	return workspace, nil
 }
@@ -149,7 +149,7 @@ func (a *repo) GetWorkspace(id string) (*Workspace, error) {
 func (a *repo) GetWorkspaceByName(name string) (*Workspace, error) {
 	workspace := &Workspace{}
 	if err := a.tx.Get(workspace, "SELECT * FROM workspaces WHERE name = $1", name); err != nil {
-		return nil, errors.Wrap(err, "workspace not found")
+		return nil, fmt.Errorf("workspace not found: %w", err)
 	}
 	return workspace, nil
 }
@@ -177,7 +177,7 @@ func (a *repo) GetAccount(id string) (*Account, error) {
 
 	acc := &Account{}
 	if err := a.tx.Get(acc, "SELECT * FROM accounts WHERE id = $1", id); err != nil {
-		return nil, errors.Wrap(err, "account not found")
+		return nil, fmt.Errorf("account not found: %w", err)
 	}
 
 	return acc, nil
@@ -186,7 +186,7 @@ func (a *repo) GetAccount(id string) (*Account, error) {
 func (a *repo) GetAccountByEmail(email string) (*Account, error) {
 	acc := &Account{}
 	if err := a.tx.Get(acc, "SELECT * FROM accounts WHERE email = $1", email); err != nil {
-		return nil, errors.Wrap(err, "account not found")
+		return nil, fmt.Errorf("account not found: %w", err)
 	}
 	return acc, nil
 }
@@ -194,7 +194,7 @@ func (a *repo) GetAccountByEmail(email string) (*Account, error) {
 func (a *repo) GetAccountByConfirmationKey(key string) (*Account, error) {
 	acc := &Account{}
 	if err := a.tx.Get(acc, "SELECT * FROM accounts WHERE email_confirmation_key = $1", key); err != nil {
-		return nil, errors.Wrap(err, "account not found")
+		return nil, fmt.Errorf("account not found: %w", err)
 	}
 	return acc, nil
 }
@@ -202,7 +202,7 @@ func (a *repo) GetAccountByConfirmationKey(key string) (*Account, error) {
 func (a *repo) GetAccountByPasswordKey(key string) (*Account, error) {
 	acc := &Account{}
 	if err := a.tx.Get(acc, "SELECT * FROM accounts WHERE password_reset_key = $1", key); err != nil {
-		return nil, errors.Wrap(err, "account not found")
+		return nil, fmt.Errorf("account not found: %w", err)
 	}
 	return acc, nil
 }
@@ -242,7 +242,7 @@ func (a *repo) DeleteMember(wsid string, id string) {
 func (a *repo) GetMemberByAccountAndWorkspace(accountID string, workspaceID string) (*Member, error) {
 	member := &Member{}
 	if err := a.tx.Get(member, "SELECT * FROM members WHERE account_id = $1 AND workspace_id = $2", accountID, workspaceID); err != nil {
-		return nil, errors.Wrap(err, "member not found")
+		return nil, fmt.Errorf("member not found: %w", err)
 	}
 	return member, nil
 }
@@ -250,7 +250,7 @@ func (a *repo) GetMemberByAccountAndWorkspace(accountID string, workspaceID stri
 func (a *repo) GetMember(workspaceID string, id string) (*Member, error) {
 	member := &Member{}
 	if err := a.tx.Get(member, "SELECT * FROM members WHERE workspace_id = $1 AND id = $2", workspaceID, id); err != nil {
-		return nil, errors.Wrap(err, "member not found")
+		return nil, fmt.Errorf("member not found: %w", err)
 	}
 	return member, nil
 }
@@ -294,7 +294,7 @@ func (a *repo) FindSubscriptionsByWorkspace(id string) ([]*Subscription, error) 
 	err := a.tx.Select(&x, "SELECT * FROM subscriptions WHERE workspace_id = $1 order by created_at desc", id)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.Wrap(err, "no subscriptions found")
+		return nil, fmt.Errorf("no subscriptions found: %w", err)
 	}
 	return x, nil
 }
@@ -305,7 +305,7 @@ func (a *repo) FindSubscriptionsByAccount(accID string) ([]*Subscription, error)
 	err := a.tx.Select(&x, "SELECT DISTINCT ON (s.workspace_id) * FROM subscriptions s WHERE s.workspace_id IN  (select m.workspace_id from members m where m.account_id = $1) order by s.workspace_id, s.from_date desc", accID)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.Wrap(err, "no subscriptions found")
+		return nil, fmt.Errorf("no subscriptions found: %w", err)
 	}
 
 	return x, nil
@@ -314,7 +314,7 @@ func (a *repo) FindSubscriptionsByAccount(accID string) ([]*Subscription, error)
 func (a *repo) FindSubscriptionByExternalID(externalSubID string) (*Subscription, error) {
 	x := &Subscription{}
 	if err := a.tx.Get(x, "SELECT * FROM subscriptions  WHERE external_subscription_id = $1", externalSubID); err != nil {
-		return nil, errors.Wrap(err, "no subscription found")
+		return nil, fmt.Errorf("no subscription found: %w", err)
 	}
 	return x, nil
 }
@@ -370,7 +370,7 @@ func (a *repo) FindInvitesByWorkspace(wsid string) ([]*Invite, error) {
 func (a *repo) GetProject(workspaceID string, projectID string) (*Project, error) {
 	x := &Project{}
 	if err := a.tx.Get(x, "SELECT * FROM projects WHERE workspace_id = $1 AND id = $2", workspaceID, projectID); err != nil {
-		return nil, errors.Wrap(err, "project not found")
+		return nil, fmt.Errorf("project not found: %w", err)
 	}
 	return x, nil
 }
@@ -378,7 +378,7 @@ func (a *repo) GetProject(workspaceID string, projectID string) (*Project, error
 func (a *repo) GetProjectByExternalLink(link string) (*Project, error) {
 	x := &Project{}
 	if err := a.tx.Get(x, "SELECT * FROM projects WHERE external_link = $1", link); err != nil {
-		return nil, errors.Wrap(err, "project not found")
+		return nil, fmt.Errorf("project not found: %w", err)
 	}
 	return x, nil
 }
@@ -387,7 +387,7 @@ func (a *repo) FindProjectsByWorkspace(workspaceID string) ([]*Project, error) {
 	x := []*Project{}
 	err := a.tx.Select(&x, "SELECT * FROM projects WHERE workspace_id = $1", workspaceID)
 	if err != nil {
-		return nil, errors.Wrap(err, "no projects found")
+		return nil, fmt.Errorf("no projects found: %w", err)
 	}
 	return x, nil
 }
@@ -405,7 +405,7 @@ func (a *repo) DeleteProject(workspaceID string, projectID string) {
 func (a *repo) GetMilestone(workspaceID string, milestoneID string) (*Milestone, error) {
 	x := &Milestone{}
 	if err := a.tx.Get(x, "SELECT * FROM milestones WHERE workspace_id = $1 AND id = $2", workspaceID, milestoneID); err != nil {
-		return nil, errors.Wrap(err, "milestone not found")
+		return nil, fmt.Errorf("milestone not found: %w", err)
 	}
 	return x, nil
 }
@@ -431,7 +431,7 @@ func (a *repo) DeleteMilestone(workspaceID string, milestoneID string) {
 func (a *repo) GetWorkflow(workspaceID string, workflowID string) (*Workflow, error) {
 	x := &Workflow{}
 	if err := a.tx.Get(x, "SELECT * FROM workflows WHERE workspace_id = $1 AND id = $2", workspaceID, workflowID); err != nil {
-		return nil, errors.Wrap(err, "not found")
+		return nil, fmt.Errorf("not found: %w", err)
 	}
 	return x, nil
 }
@@ -440,7 +440,7 @@ func (a *repo) FindWorkflowsByProject(workspaceID string, projectID string) ([]*
 	x := []*Workflow{}
 	err := a.tx.Select(&x, "SELECT * FROM workflows WHERE workspace_id = $1 and project_id = $2 order by rank", workspaceID, projectID)
 	if err != nil {
-		return nil, errors.Wrap(err, "none found")
+		return nil, fmt.Errorf("none found: %w", err)
 	}
 	return x, nil
 }
@@ -457,7 +457,7 @@ func (a *repo) DeleteWorkflow(workspaceID string, workflowID string) {
 func (a *repo) GetSubWorkflow(workspaceID string, subWorkflowID string) (*SubWorkflow, error) {
 	x := &SubWorkflow{}
 	if err := a.tx.Get(x, "SELECT * FROM subworkflows WHERE workspace_id = $1 AND id = $2", workspaceID, subWorkflowID); err != nil {
-		return nil, errors.Wrap(err, "not found")
+		return nil, fmt.Errorf("not found: %w", err)
 	}
 	return x, nil
 }
@@ -466,7 +466,7 @@ func (a *repo) FindSubWorkflowsByProject(workspaceID string, projectID string) (
 	x := []*SubWorkflow{}
 	err := a.tx.Select(&x, "SELECT * FROM subworkflows s WHERE s.workspace_id = $1 AND s.workflow_id in (select w.id from workflows w where w.workspace_id = $1 and w.project_id = $2)", workspaceID, projectID)
 	if err != nil {
-		return nil, errors.Wrap(err, "no found")
+		return nil, fmt.Errorf("no found: %w", err)
 	}
 	return x, nil
 }
@@ -475,7 +475,7 @@ func (a *repo) FindSubWorkflowsByWorkflow(workspaceID string, workflowID string)
 	x := []*SubWorkflow{}
 	err := a.tx.Select(&x, "SELECT * FROM subworkflows s WHERE s.workspace_id = $1 AND s.workflow_id = $2 ORDER BY s.rank", workspaceID, workflowID)
 	if err != nil {
-		return nil, errors.Wrap(err, "no found")
+		return nil, fmt.Errorf("no found: %w", err)
 	}
 	return x, nil
 
@@ -494,7 +494,7 @@ func (a *repo) DeleteSubWorkflow(workspaceID string, subWorkflowID string) {
 func (a *repo) GetFeature(workspaceID string, featureID string) (*Feature, error) {
 	x := &Feature{}
 	if err := a.tx.Get(x, "SELECT * FROM features WHERE workspace_id = $1 AND id = $2", workspaceID, featureID); err != nil {
-		return nil, errors.Wrap(err, "not found")
+		return nil, fmt.Errorf("not found: %w", err)
 	}
 	return x, nil
 }
@@ -503,7 +503,7 @@ func (a *repo) FindFeaturesByProject(workspaceID string, projectID string) ([]*F
 	x := []*Feature{}
 	err := a.tx.Select(&x, "SELECT * FROM features f WHERE f.workspace_id = $1 AND f.milestone_id IN (select m.id from milestones m where m.workspace_id = $1 and m.project_id = $2) ", workspaceID, projectID)
 	if err != nil {
-		return nil, errors.Wrap(err, "no found")
+		return nil, fmt.Errorf("no found: %w", err)
 	}
 	return x, nil
 }
@@ -512,7 +512,7 @@ func (a *repo) FindFeaturesByMilestoneAndSubWorkflow(workspaceID string, mid str
 	x := []*Feature{}
 	err := a.tx.Select(&x, "SELECT * FROM features f WHERE f.workspace_id = $1 AND f.milestone_id = $2 AND f.subworkflow_id = $3 ORDER BY f.rank", workspaceID, mid, swid)
 	if err != nil {
-		return nil, errors.Wrap(err, "no found")
+		return nil, fmt.Errorf("no found: %w", err)
 	}
 	return x, nil
 }
@@ -531,7 +531,7 @@ func (a *repo) DeleteFeature(workspaceID string, featureID string) {
 func (a *repo) GetFeatureComment(workspaceID string, ID string) (*FeatureComment, error) {
 	x := &FeatureComment{}
 	if err := a.tx.Get(x, "SELECT * FROM feature_comments WHERE workspace_id = $1 AND id = $2", workspaceID, ID); err != nil {
-		return nil, errors.Wrap(err, "not found")
+		return nil, fmt.Errorf("not found: %w", err)
 	}
 	return x, nil
 }
@@ -540,7 +540,7 @@ func (a *repo) FindFeatureCommentsByProject(workspaceID string, projectID string
 	x := []*FeatureComment{}
 	err := a.tx.Select(&x, "SELECT * FROM feature_comments f WHERE f.workspace_id = $1 AND f.project_id = $2", workspaceID, projectID)
 	if err != nil {
-		return nil, errors.Wrap(err, "no found")
+		return nil, fmt.Errorf("no found: %w", err)
 	}
 	return x, nil
 }
@@ -548,7 +548,7 @@ func (a *repo) FindFeatureCommentsByProject(workspaceID string, projectID string
 func (a *repo) FindFeatureCommentsByFeature(workspaceID string, ID string) (*FeatureComment, error) {
 	x := &FeatureComment{}
 	if err := a.tx.Get(x, "SELECT * FROM feature_comments WHERE workspace_id = $1 AND feature_id = $2", workspaceID, ID); err != nil {
-		return nil, errors.Wrap(err, "not found")
+		return nil, fmt.Errorf("not found: %w", err)
 	}
 	return x, nil
 }
@@ -567,7 +567,7 @@ func (a *repo) DeleteFeatureComment(workspaceID string, commentID string) {
 func (a *repo) GetFeatureCommentOwner(workspaceID string, ID string) (*FeatureCommentOwner, error) {
 	x := &FeatureCommentOwner{}
 	if err := a.tx.Get(x, "SELECT * FROM feature_comment_owners WHERE workspace_id = $1 AND id = $2", workspaceID, ID); err != nil {
-		return nil, errors.Wrap(err, "not found")
+		return nil, fmt.Errorf("not found: %w", err)
 	}
 	return x, nil
 }
@@ -575,7 +575,7 @@ func (a *repo) GetFeatureCommentOwner(workspaceID string, ID string) (*FeatureCo
 func (a *repo) GetFeatureCommentOwnerByFeatureComment(workspaceID string, ID string) (*FeatureCommentOwner, error) {
 	x := &FeatureCommentOwner{}
 	if err := a.tx.Get(x, "SELECT * FROM feature_comment_owners WHERE workspace_id = $1 AND feature_comment_id = $2", workspaceID, ID); err != nil {
-		return nil, errors.Wrap(err, "not found")
+		return nil, fmt.Errorf("not found: %w", err)
 	}
 	return x, nil
 }
@@ -584,7 +584,7 @@ func (a *repo) FindFeatureCommentOwnersByProject(workspaceID string, projectID s
 	x := []*FeatureCommentOwner{}
 	err := a.tx.Select(&x, "SELECT * FROM feature_comment_owners f WHERE f.workspace_id = $1 AND f.project_id = $2", workspaceID, projectID)
 	if err != nil {
-		return nil, errors.Wrap(err, "no found")
+		return nil, fmt.Errorf("no found: %w", err)
 	}
 	return x, nil
 }
@@ -599,7 +599,7 @@ func (a *repo) StoreFeatureCommentOwner(x *FeatureCommentOwner) {
 func (a *repo) GetPersona(workspaceID string, ID string) (*Persona, error) {
 	x := &Persona{}
 	if err := a.tx.Get(x, "SELECT * FROM personas WHERE workspace_id = $1 AND id = $2", workspaceID, ID); err != nil {
-		return nil, errors.Wrap(err, "not found")
+		return nil, fmt.Errorf("not found: %w", err)
 	}
 	return x, nil
 
@@ -609,7 +609,7 @@ func (a *repo) FindPersonasByProject(workspaceID string, projectID string) ([]*P
 	x := []*Persona{}
 	err := a.tx.Select(&x, "SELECT * FROM personas f WHERE f.workspace_id = $1 AND f.project_id = $2", workspaceID, projectID)
 	if err != nil {
-		return nil, errors.Wrap(err, "no found")
+		return nil, fmt.Errorf("no found: %w", err)
 	}
 	return x, nil
 }
@@ -628,7 +628,7 @@ func (a *repo) DeletePersona(workspaceID string, id string) {
 func (a *repo) GetWorkflowPersona(workspaceID string, ID string) (*WorkflowPersona, error) {
 	x := &WorkflowPersona{}
 	if err := a.tx.Get(x, "SELECT * FROM workflow_personas WHERE workspace_id = $1 AND id = $2", workspaceID, ID); err != nil {
-		return nil, errors.Wrap(err, "not found")
+		return nil, fmt.Errorf("not found: %w", err)
 	}
 	return x, nil
 }
@@ -637,7 +637,7 @@ func (a *repo) FindWorkflowPersonasByProject(workspaceID string, projectID strin
 	x := []*WorkflowPersona{}
 	err := a.tx.Select(&x, "SELECT * FROM workflow_personas f WHERE f.workspace_id = $1 AND f.project_id = $2", workspaceID, projectID)
 	if err != nil {
-		return nil, errors.Wrap(err, "no found")
+		return nil, fmt.Errorf("no found: %w", err)
 	}
 	return x, nil
 }

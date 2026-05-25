@@ -9,7 +9,7 @@ import { IFeatureComment } from '../store/featurecomments/types';
 import { IPersona } from '../store/personas/types';
 import { IWorkflowPersona } from '../store/workflowpersonas/types';
 
-const endpoint = process.env.REACT_APP_API_ENDPOINT ? process.env.REACT_APP_API_ENDPOINT : "/v1"
+const endpoint = import.meta.env.VITE_API_ENDPOINT ? import.meta.env.VITE_API_ENDPOINT : "/v1"
 
 export const API_CHANGE_GENERAL_INFORMATION = async (workspaceId: string, euVat: string, externalBillingEmail: string) => {
 

@@ -20,7 +20,7 @@ type welcome struct {
 // WelcomeBody ...
 func WelcomeBody(w welcome) (string, error) {
 
-	data, err := tmpl.Asset("tmpl/welcome.tmpl")
+	data, err := tmpl.FS.ReadFile("welcome.tmpl")
 	t, err := template.New("").Parse(string(data))
 	if err != nil {
 		return "", err
@@ -42,7 +42,7 @@ type emailBody struct {
 // ChangeEmailBody ...
 func ChangeEmailBody(w emailBody) (string, error) {
 
-	data, err := tmpl.Asset("tmpl/email.tmpl")
+	data, err := tmpl.FS.ReadFile("email.tmpl")
 	t, err := template.New("").Parse(string(data))
 	if err != nil {
 		return "", err
@@ -77,7 +77,7 @@ type resetPasswordBody struct {
 // ResetPasswordBody ...
 func ResetPasswordBody(w resetPasswordBody) (string, error) {
 
-	data, err := tmpl.Asset("tmpl/reset.tmpl")
+	data, err := tmpl.FS.ReadFile("reset.tmpl")
 	t, err := template.New("").Parse(string(data))
 
 	if err != nil {
@@ -102,7 +102,7 @@ type InviteStruct struct {
 }
 
 func inviteBody(w InviteStruct) (string, error) {
-	data, err := tmpl.Asset("tmpl/invite.tmpl")
+	data, err := tmpl.FS.ReadFile("invite.tmpl")
 	t, err := template.New("").Parse(string(data))
 	if err != nil {
 		return "", err

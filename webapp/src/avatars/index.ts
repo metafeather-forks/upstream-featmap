@@ -1,38 +1,25 @@
-const avatar00 = require("./avatar00.svg").default as string;
-const avatar01 = require("./avatar01.svg").default as string;
-const avatar02 = require("./avatar02.svg").default as string;
-const avatar03 = require("./avatar03.svg").default as string;
-const avatar04 = require("./avatar04.svg").default as string;
-const avatar05 = require("./avatar05.svg").default as string;
-const avatar06 = require("./avatar06.svg").default as string;
-const avatar07 = require("./avatar07.svg").default as string;
-const avatar08 = require("./avatar08.svg").default as string;
+import avatar00 from "./avatar00.svg";
+import avatar01 from "./avatar01.svg";
+import avatar02 from "./avatar02.svg";
+import avatar03 from "./avatar03.svg";
+import avatar04 from "./avatar04.svg";
+import avatar05 from "./avatar05.svg";
+import avatar06 from "./avatar06.svg";
+import avatar07 from "./avatar07.svg";
+import avatar08 from "./avatar08.svg";
 
+const avatars: Record<string, string> = {
+  avatar00,
+  avatar01,
+  avatar02,
+  avatar03,
+  avatar04,
+  avatar05,
+  avatar06,
+  avatar07,
+  avatar08,
+};
 
-const avatar = (name: string) => {
+const avatar = (name: string): string | undefined => avatars[name];
 
-    switch (name) {
-        case "avatar00":
-            return avatar00
-        case "avatar01":
-            return avatar01
-        case "avatar02":
-            return avatar02
-        case "avatar03":
-            return avatar03
-        case "avatar04":
-            return avatar04
-        case "avatar05":
-            return avatar05
-        case "avatar06":
-            return avatar06
-        case "avatar07":
-            return avatar07
-        case "avatar08":
-            return avatar08
-
-    }
-
-}
-
-export { avatar }
+export { avatar };

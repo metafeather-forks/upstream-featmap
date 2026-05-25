@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pkg/errors"
-	uuid "github.com/satori/go.uuid"
+	"errors"
+	"github.com/google/uuid"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/checkout/session"
 	"github.com/stripe/stripe-go/sub"
@@ -93,7 +93,7 @@ func (s *service) handleCheckoutSession(ses *stripe.CheckoutSession) error {
 
 	newSubscription := &Subscription{
 		WorkspaceID:                ses.ClientReferenceID,
-		ID:                         uuid.Must(uuid.NewV4(), nil).String(),
+		ID:                         uuid.Must(uuid.NewV7()).String(),
 		Level:                      s.externalPlanToTier(stripeSub.Plan.ID),
 		NumberOfEditors:            int(stripeSub.Quantity),
 		FromDate:                   time.Unix(stripeSub.CurrentPeriodStart, 0).UTC(),

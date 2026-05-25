@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/amborle/featmap/migrations"
 	"github.com/amborle/featmap/webapp"
-	assetfs "github.com/elazarl/go-bindata-assetfs"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -21,7 +21,7 @@ import (
 	"github.com/go-chi/jwtauth"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	bindata "github.com/golang-migrate/migrate/v4/source/go_bindata"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -82,17 +82,12 @@ func main() {
 	}()
 
 	// Apply migrations
-	s := bindata.Resource(migrations.AssetNames(),
-		func(name string) ([]byte, error) {
-			return migrations.Asset(name)
-		})
-
-	d, err := bindata.WithInstance(s)
+	d, err := iofs.New(migrations.FS, ".")
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	m, err := migrate.NewWithSourceInstance("go-bindata", d, config.DbConnectionString)
+	m, err := migrate.NewWithSourceInstance("iofs", d, config.DbConnectionString)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -124,17 +119,23 @@ func main() {
 	r.Route("/v1/account", accountAPI) // Account needed
 	r.Route("/v1/", workspaceAPI)      // Account + workspace is needed
 
-	files := &assetfs.AssetFS{
-		Asset:    webapp.Asset,
-		AssetDir: webapp.AssetDir,
-		Prefix:   "webapp/build/static",
+	buildFS, err := fs.Sub(webapp.FS, "build")
+	if err != nil {
+		log.Fatalln(err)
 	}
 
-	fileServer(r, "/static", files)
-
+	// Static files + SPA fallback: serve files from build/ if they exist,
+	// otherwise serve index.html for client-side routing.
 	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
-		index, _ := webapp.Asset("webapp/build/index.html")
-		http.ServeContent(w, r, "index.html", time.Now(), strings.NewReader(string(index)))
+		path := strings.TrimPrefix(r.URL.Path, "/")
+		f, err := buildFS.Open(path)
+		if err != nil {
+			index, _ := webapp.FS.ReadFile("build/index.html")
+			http.ServeContent(w, r, "index.html", time.Now(), strings.NewReader(string(index)))
+			return
+		}
+		f.Close()
+		http.FileServer(http.FS(buildFS)).ServeHTTP(w, r)
 	})
 
 	fmt.Println("Serving on port " + config.Port)
@@ -163,22 +164,4 @@ func readConfiguration() (Configuration, error) {
 	}
 
 	return configuration, err
-}
-
-func fileServer(r chi.Router, path string, root http.FileSystem) {
-	if strings.ContainsAny(path, "{}*") {
-		panic("FileServer does not permit URL parameters.")
-	}
-
-	fs := http.StripPrefix(path, http.FileServer(root))
-
-	if path != "/" && path[len(path)-1] != '/' {
-		r.Get(path, http.RedirectHandler(path+"/", 301).ServeHTTP)
-		path += "/"
-	}
-	path += "*"
-
-	r.Get(path, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fs.ServeHTTP(w, r)
-	}))
 }
