@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -264,13 +264,13 @@ func (s *service) Register(workspaceName string, name string, email string, pass
 
 	body, err := WelcomeBody(welcome{s.config.AppSiteURL, acc.EmailConfirmationSentTo, workspace.Name, acc.EmailConfirmationKey})
 	if err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 		return nil, nil, nil, err
 	}
 
 	err = s.SendEmail(s.config.SMTPServer, s.config.SMTPPort, s.config.SMTPUser, s.config.SMTPPass, s.config.EmailFrom, acc.EmailConfirmationSentTo, "Welcome to Featmap!", body)
 	if err != nil {
-		log.Println("error sending mail")
+		slog.Info("error sending mail")
 	}
 
 	return workspace, acc, member, nil
@@ -322,7 +322,7 @@ func (s *service) GetAccount(id string) (*Account, error) {
 func (s *service) GetAccountsByWorkspace() []*Account {
 	accounts, err := s.r.FindAccountsByWorkspace(s.Member.WorkspaceID)
 	if err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 		return nil
 	}
 	return accounts
@@ -380,7 +380,7 @@ func (s *service) GetWorkspaceByContext() *Workspace {
 
 	workspace, err := s.GetWorkspace(s.Member.WorkspaceID)
 	if err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 	}
 	return workspace
 }
@@ -389,7 +389,7 @@ func (s *service) GetWorkspaces() []*Workspace {
 
 	workspace, err := s.r.GetWorkspacesByAccount(s.Acc.ID)
 	if err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 		return nil
 	}
 	return workspace
@@ -473,7 +473,7 @@ func (s *service) GetMembersByAccount() []*Member {
 
 	members, err := s.r.GetMembersByAccount(s.Acc.ID)
 	if err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 		return nil
 	}
 	return members
@@ -482,7 +482,7 @@ func (s *service) GetMembersByAccount() []*Member {
 func (s *service) GetMembers() []*Member {
 	members, err := s.r.FindMembersByWorkspace(s.Member.WorkspaceID)
 	if err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 		return nil
 	}
 	return members
@@ -609,7 +609,7 @@ func (s *service) SendInvitationMail(invitationID string) error {
 
 	err = s.SendEmail(s.config.SMTPServer, s.config.SMTPPort, s.config.SMTPUser, s.config.SMTPPass, s.config.EmailFrom, invite.Email, "Featmap: invitation to join a workspace", body)
 	if err != nil {
-		log.Println("error sending mail")
+		slog.Info("error sending mail")
 	}
 
 	return nil
@@ -649,7 +649,7 @@ func (s *service) DeleteWorkspace() error {
 func (s *service) GetInvitesByWorkspace() []*Invite {
 	invites, err := s.r.FindInvitesByWorkspace(s.Member.WorkspaceID)
 	if err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 		return nil
 	}
 	return invites
@@ -693,7 +693,7 @@ func (s *service) GetInvite(code string) (*Invite, error) {
 func (s *service) GetProject(id string) *Project {
 	pp, err := s.r.GetProject(s.Member.WorkspaceID, id)
 	if err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 	}
 	return pp
 }
@@ -833,7 +833,7 @@ func (s *service) DeleteProject(id string) error {
 func (s *service) GetProjects() []*Project {
 	pp, err := s.r.FindProjectsByWorkspace(s.Member.WorkspaceID)
 	if err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 	}
 	return pp
 }
@@ -955,7 +955,7 @@ func (s *service) DeleteMilestone(id string) error {
 func (s *service) GetMilestonesByProject(id string) []*Milestone {
 	pp, err := s.r.FindMilestonesByProject(s.Member.WorkspaceID, id)
 	if err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 	}
 	return pp
 }
@@ -1163,7 +1163,7 @@ func (s *service) DeleteWorkflow(id string) error {
 func (s *service) GetWorkflowsByProject(id string) []*Workflow {
 	pp, err := s.r.FindWorkflowsByProject(s.Member.WorkspaceID, id)
 	if err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 	}
 	return pp
 }
@@ -1370,7 +1370,7 @@ func (s *service) DeleteSubWorkflow(id string) error {
 func (s *service) GetSubWorkflowsByProject(id string) []*SubWorkflow {
 	pp, err := s.r.FindSubWorkflowsByProject(s.Member.WorkspaceID, id)
 	if err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 	}
 	return pp
 }
@@ -1672,7 +1672,7 @@ func (s *service) MoveFeature(id string, toMilestoneID string, toSubWorkflowID s
 func (s *service) GetFeaturesByProject(id string) []*Feature {
 	pp, err := s.r.FindFeaturesByProject(s.Member.WorkspaceID, id)
 	if err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 	}
 	return pp
 }
@@ -1774,7 +1774,7 @@ func (s *service) GetFeatureCommentsByProject(id string) []*FeatureComment {
 	}
 
 	if err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 	}
 	return pp
 }
@@ -1868,12 +1868,12 @@ func (s *service) UpdateEmail(email string) error {
 
 	body, err := ChangeEmailBody(emailBody{s.config.AppSiteURL, a.EmailConfirmationSentTo, a.EmailConfirmationKey})
 	if err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 	}
 
 	err = s.SendEmail(s.config.SMTPServer, s.config.SMTPPort, s.config.SMTPUser, s.config.SMTPPass, s.config.EmailFrom, em, "Welcome to Featmap!", body)
 	if err != nil {
-		log.Println("error sending mail")
+		slog.Info("error sending mail")
 	}
 
 	return nil
@@ -1908,7 +1908,7 @@ func (s *service) ResendEmail() error {
 
 	err := s.SendEmail(s.config.SMTPServer, s.config.SMTPPort, s.config.SMTPUser, s.config.SMTPPass, s.config.EmailFrom, a.EmailConfirmationSentTo, "Featmap: verify your email address", body)
 	if err != nil {
-		log.Println("error sending mail")
+		slog.Info("error sending mail")
 	}
 	return nil
 }
@@ -1924,7 +1924,7 @@ func (s *service) SendResetEmail(email string) error {
 
 	err = s.SendEmail(s.config.SMTPServer, s.config.SMTPPort, s.config.SMTPUser, s.config.SMTPPass, s.config.EmailFrom, email, "Featmap: request to reset password", body)
 	if err != nil {
-		log.Println("error sending mail")
+		slog.Info("error sending mail")
 	}
 
 	return nil
@@ -1973,7 +1973,7 @@ func colorIsValid(color string) bool {
 func (s *service) GetPersonasByProject(id string) []*Persona {
 	pp, err := s.r.FindPersonasByProject(s.Member.WorkspaceID, id)
 	if err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 	}
 	return pp
 }
@@ -1983,7 +1983,7 @@ func (s *service) GetPersonasByProject(id string) []*Persona {
 func (s *service) GetWorkflowPersonasByProject(id string) []*WorkflowPersona {
 	pp, err := s.r.FindWorkflowPersonasByProject(s.Member.WorkspaceID, id)
 	if err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 	}
 	return pp
 }

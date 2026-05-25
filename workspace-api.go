@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 
 	"github.com/go-chi/render"
 
@@ -1118,7 +1118,7 @@ func deleteFeatureComment(w http.ResponseWriter, r *http.Request) {
 
 func deleteWorkflowPersona(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "ID")
-	log.Println(id)
+	slog.Info("debug", "id", id)
 
 	if err := GetEnv(r).Service.DeleteWorkflowPersona(id); err != nil {
 		_ = render.Render(w, r, ErrInvalidRequest(err))
@@ -1156,7 +1156,7 @@ func (p *createWorkflowPersonaRequest) Bind(r *http.Request) error {
 
 func deletePersona(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "ID")
-	log.Println(id)
+	slog.Info("debug", "id", id)
 
 	if err := GetEnv(r).Service.DeletePersona(id); err != nil {
 		_ = render.Render(w, r, ErrInvalidRequest(err))

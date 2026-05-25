@@ -1,13 +1,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/fs"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/amborle/featmap/migrations"
@@ -50,7 +53,8 @@ func main() {
 
 	config, err := readConfiguration()
 	if err != nil {
-		log.Fatalln("no conf.json found")
+		slog.Error("configuration error", "error", err)
+		os.Exit(1)
 	}
 
 	// CORS
@@ -67,23 +71,26 @@ func main() {
 
 	db, err := sqlx.Connect("postgres", config.DbConnectionString)
 	if err != nil {
-		log.Fatalln("database error:" + err.Error())
+		slog.Error("database connection failed", "error", err)
+		os.Exit(1)
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
-			log.Fatalln(err)
+			slog.Error("database close error", "error", err)
 		}
 	}()
 
 	// Apply migrations
 	d, err := iofs.New(migrations.FS, ".")
 	if err != nil {
-		log.Fatalln(err)
+		slog.Error("migration source error", "error", err)
+		os.Exit(1)
 	}
 
 	m, err := migrate.NewWithSourceInstance("iofs", d, config.DbConnectionString)
 	if err != nil {
-		log.Fatalln(err)
+		slog.Error("migration init error", "error", err)
+		os.Exit(1)
 	}
 
 	m.Up()
@@ -122,7 +129,8 @@ func main() {
 
 	buildFS, err := fs.Sub(webapp.FS, "build")
 	if err != nil {
-		log.Fatalln(err)
+		slog.Error("embedded filesystem error", "error", err)
+		os.Exit(1)
 	}
 
 	// Static files + SPA fallback: serve files from build/ if they exist,
@@ -139,11 +147,37 @@ func main() {
 		http.FileServer(http.FS(buildFS)).ServeHTTP(w, r)
 	})
 
-	fmt.Println("Serving on port " + config.Port)
-	err = http.ListenAndServe(":"+config.Port, r)
-	if err != nil {
-		log.Fatalln(err)
+	slog.Info("starting server", "port", config.Port)
+
+	srv := &http.Server{
+		Addr:    ":" + config.Port,
+		Handler: r,
 	}
+
+	// Start server in a goroutine
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("server error", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	// Wait for interrupt signal for graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	slog.Info("shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		slog.Error("forced shutdown", "error", err)
+		os.Exit(1)
+	}
+
+	slog.Info("server stopped")
 
 }
 

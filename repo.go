@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -261,7 +261,7 @@ func (a *repo) GetMembersByAccount(id string) ([]*Member, error) {
 func (a *repo) GetMemberByEmail(workspaceID string, email string) (*Member, error) {
 	member := &Member{}
 	if err := a.tx.Get(member, "SELECT * FROM members m WHERE m.workspace_id = $1 AND m.account_id IN (SELECT id FROM accounts a WHERE a.email = $2) ", workspaceID, email); err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 		return nil, err
 	}
 	return member, nil
@@ -289,7 +289,7 @@ func (a *repo) DeleteInvite(wsid string, id string) {
 func (a *repo) GetInviteByCode(code string) (*Invite, error) {
 	x := &Invite{}
 	if err := a.tx.Get(x, "SELECT * FROM invites WHERE code = $1", code); err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 		return nil, err
 	}
 	return x, nil
@@ -298,7 +298,7 @@ func (a *repo) GetInviteByCode(code string) (*Invite, error) {
 func (a *repo) GetInviteByEmail(workspaceID string, email string) (*Invite, error) {
 	x := &Invite{}
 	if err := a.tx.Get(x, "SELECT * FROM invites  WHERE workspace_id = $1 AND email = $2 ", workspaceID, email); err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 		return nil, err
 	}
 	return x, nil
@@ -307,7 +307,7 @@ func (a *repo) GetInviteByEmail(workspaceID string, email string) (*Invite, erro
 func (a *repo) GetInvite(workspaceID string, id string) (*Invite, error) {
 	x := &Invite{}
 	if err := a.tx.Get(x, "SELECT * FROM invites WHERE workspace_id = $1 AND id = $2", workspaceID, id); err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 		return nil, err
 	}
 	return x, nil
@@ -316,7 +316,7 @@ func (a *repo) GetInvite(workspaceID string, id string) (*Invite, error) {
 func (a *repo) FindInvitesByWorkspace(wsid string) ([]*Invite, error) {
 	x := []*Invite{}
 	if err := a.tx.Select(&x, "SELECT * FROM invites WHERE workspace_id = $1", wsid); err != nil {
-		log.Println(err)
+		slog.Info("error", "error", err)
 		return nil, err
 	}
 	return x, nil

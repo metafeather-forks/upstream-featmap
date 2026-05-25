@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -173,7 +173,7 @@ func ResetEmail(w http.ResponseWriter, r *http.Request) {
 	err := s.SendResetEmail(email)
 
 	if err != nil {
-		log.Println("error sending mail")
+		slog.Info("error sending mail")
 	}
 	return
 }

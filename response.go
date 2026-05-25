@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/render"
@@ -45,7 +45,7 @@ func (r *Response) AddData(key string, data interface{}) {
 func (r *Response) JSON() []byte {
 	res, err := json.Marshal(r)
 	if err != nil {
-		log.Fatalln(err)
+		slog.Error("error", "error", err)
 	}
 
 	return res
