@@ -30,9 +30,11 @@ e2e: webapp
 vet:
 	go vet ./...
 
-## clean: remove build artifacts
+## clean: remove build artifacts (keeps webapp/build/placeholder for go:embed)
 clean:
-	rm -rf $(BINDIR) $(WEBAPP)/build $(WEBAPP)/node_modules
+	rm -rf $(BINDIR) $(WEBAPP)/node_modules
+	find $(WEBAPP)/build -not -name '.gitkeep' -not -name 'index.html' -type f -delete 2>/dev/null || true
+	find $(WEBAPP)/build -not -name '.gitkeep' -empty -type d -delete 2>/dev/null || true
 
 ## release: cross-compile for darwin/linux/windows amd64
 release: webapp
