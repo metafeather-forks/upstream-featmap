@@ -81,6 +81,7 @@ type Service interface {
 	GetProjectExtendedByExternalLink(link string) (*projectResponse, error)
 	GetProject(id string) *Project
 	CreateProjectWithID(id string, title string) (*Project, error)
+	CloneProject(sourceProjectID string) (*Project, error)
 	RenameProject(id string, title string) (*Project, error)
 	DeleteProject(id string) error
 	GetProjects() []*Project
@@ -828,6 +829,128 @@ func (s *service) UpdateProjectDescription(id string, d string) (*Project, error
 func (s *service) DeleteProject(id string) error {
 	s.r.DeleteProject(s.Member.WorkspaceID, id)
 	return nil
+}
+
+func (s *service) CloneProject(sourceProjectID string) (*Project, error) {
+	wsID := s.Member.WorkspaceID
+	t := time.Now().UTC()
+
+	src, err := s.r.GetProject(wsID, sourceProjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	clone := &Project{
+		WorkspaceID:        wsID,
+		ID:                 uuid.Must(uuid.NewV7()).String(),
+		Title:              src.Title + " (copy)",
+		Description:        src.Description,
+		CreatedByName:      s.Acc.Name,
+		CreatedAt:          t,
+		LastModified:       t,
+		LastModifiedByName: s.Acc.Name,
+		ExternalLink:       uuid.Must(uuid.NewV7()).String(),
+		Annotations:        src.Annotations,
+	}
+	s.r.StoreProject(clone)
+
+	// Build ID maps: old -> new
+	personaMap := make(map[string]string)
+	milestoneMap := make(map[string]string)
+	workflowMap := make(map[string]string)
+	subworkflowMap := make(map[string]string)
+
+	// Clone personas
+	personas, _ := s.r.FindPersonasByProject(wsID, sourceProjectID)
+	for _, p := range personas {
+		newID := uuid.Must(uuid.NewV7()).String()
+		personaMap[p.ID] = newID
+		clone := &Persona{
+			WorkspaceID: wsID, ProjectID: clone.ID, ID: newID,
+			Name: p.Name, Role: p.Role, Avatar: p.Avatar,
+			Description: p.Description, CreatedAt: t,
+		}
+		s.r.StorePersona(clone)
+	}
+
+	// Clone milestones
+	milestones, _ := s.r.FindMilestonesByProject(wsID, sourceProjectID)
+	for _, m := range milestones {
+		newID := uuid.Must(uuid.NewV7()).String()
+		milestoneMap[m.ID] = newID
+		clone := &Milestone{
+			WorkspaceID: wsID, ProjectID: clone.ID, ID: newID,
+			Title: m.Title, Description: m.Description,
+			Status: m.Status, Rank: m.Rank, Color: m.Color,
+			Annotations: m.Annotations,
+			CreatedByName: s.Acc.Name, CreatedAt: t,
+			LastModified: t, LastModifiedByName: s.Acc.Name,
+		}
+		s.r.StoreMilestone(clone)
+	}
+
+	// Clone workflows
+	workflows, _ := s.r.FindWorkflowsByProject(wsID, sourceProjectID)
+	for _, w := range workflows {
+		newID := uuid.Must(uuid.NewV7()).String()
+		workflowMap[w.ID] = newID
+		clone := &Workflow{
+			WorkspaceID: wsID, ProjectID: clone.ID, ID: newID,
+			Title: w.Title, Description: w.Description,
+			Status: w.Status, Rank: w.Rank, Color: w.Color,
+			Annotations: w.Annotations,
+			CreatedByName: s.Acc.Name, CreatedAt: t,
+			LastModified: t, LastModifiedByName: s.Acc.Name,
+		}
+		s.r.StoreWorkflow(clone)
+	}
+
+	// Clone subworkflows
+	subworkflows, _ := s.r.FindSubWorkflowsByProject(wsID, sourceProjectID)
+	for _, sw := range subworkflows {
+		newID := uuid.Must(uuid.NewV7()).String()
+		subworkflowMap[sw.ID] = newID
+		newWorkflowID := workflowMap[sw.WorkflowID]
+		clone := &SubWorkflow{
+			WorkspaceID: wsID, WorkflowID: newWorkflowID, ID: newID,
+			Title: sw.Title, Description: sw.Description,
+			Status: sw.Status, Rank: sw.Rank, Color: sw.Color,
+			Annotations: sw.Annotations,
+			CreatedByName: s.Acc.Name, CreatedAt: t,
+			LastModified: t, LastModifiedByName: s.Acc.Name,
+		}
+		s.r.StoreSubWorkflow(clone)
+	}
+
+	// Clone features
+	features, _ := s.r.FindFeaturesByProject(wsID, sourceProjectID)
+	for _, f := range features {
+		newID := uuid.Must(uuid.NewV7()).String()
+		clone := &Feature{
+			WorkspaceID: wsID, SubWorkflowID: subworkflowMap[f.SubWorkflowID],
+			MilestoneID: milestoneMap[f.MilestoneID], ID: newID,
+			Title: f.Title, Description: f.Description,
+			Status: f.Status, Rank: f.Rank, Color: f.Color,
+			Annotations: f.Annotations, Estimate: f.Estimate,
+			CreatedByName: s.Acc.Name, CreatedAt: t,
+			LastModified: t, LastModifiedByName: s.Acc.Name,
+		}
+		s.r.StoreFeature(clone)
+	}
+
+	// Clone workflow personas
+	wps, _ := s.r.FindWorkflowPersonasByProject(wsID, sourceProjectID)
+	for _, wp := range wps {
+		newID := uuid.Must(uuid.NewV7()).String()
+		clone := &WorkflowPersona{
+			WorkspaceID: wsID, ProjectID: clone.ID, ID: newID,
+			WorkflowID: workflowMap[wp.WorkflowID],
+			PersonaID: personaMap[wp.PersonaID],
+		}
+		s.r.StoreWorkflowPersona(clone)
+	}
+
+	return clone, nil
 }
 
 func (s *service) GetProjects() []*Project {

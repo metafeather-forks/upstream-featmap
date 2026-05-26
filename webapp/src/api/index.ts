@@ -430,6 +430,18 @@ export const API_DELETE_PROJECT = async (workspaceId: string, id: string) => {
     });
 }
 
+export const API_CLONE_PROJECT = async (workspaceId: string, projectId: string) => {
+    return await fetch(endpoint + "/projects/" + projectId + "/clone", {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            "Workspace": workspaceId
+        },
+        credentials: 'include'
+    });
+}
+
 export const API_UPDATE_PROJECT_DESCRIPTION = async (workspaceId: string, id: string, description: string) => {
     return await fetch(endpoint + "/projects/" + id + "/description", {
         method: 'POST',

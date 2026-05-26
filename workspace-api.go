@@ -89,6 +89,7 @@ func workspaceAPI(r chi.Router) {
 					r.Group(func(r chi.Router) {
 						r.Use(RequireEditor())
 						r.Post("/", createProject)
+						r.Post("/clone", cloneProject)
 						r.Delete("/", deleteProject)
 						r.Post("/rename", renameProject)
 						r.Post("/description", updateProjectDescription)
@@ -424,6 +425,17 @@ func deleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	render.Status(r, http.StatusOK)
+}
+
+func cloneProject(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "ID")
+
+	clone, err := GetEnv(r).Service.CloneProject(id)
+	if err != nil {
+		_ = render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+	render.JSON(w, r, clone)
 }
 
 // Milestones
