@@ -53,6 +53,7 @@ _testmain.go
 /conf.json
 /.env
 /webapp/build
+!/webapp/build/index.html
 /bin
 /data
 
